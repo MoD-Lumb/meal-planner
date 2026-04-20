@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MealPlanner</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥗</text></svg>">
+  <link rel="stylesheet" href="styles/global.css">
+  <link rel="stylesheet" href="styles/app.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+<div id="app-splash" style="position:fixed;inset:0;background:#fff;z-index:9999;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;color:#444;">
+  <div style="text-align:center;">
+    <div style="font-size:48px;margin-bottom:12px;">🥗</div>
+    <div style="font-size:14px;">Loading…</div>
+  </div>
+</div>
+
+<div id="app">
+  <aside id="sidebar" class="sidebar open"></aside>
+  <main id="main-content"></main>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
