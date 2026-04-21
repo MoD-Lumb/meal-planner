@@ -1,5 +1,5 @@
-import { profileStore, profilesStore, switchProfile, createProfile, deleteProfile, apiConfigStore } from '../store.js';
-import { listChains, listStores, CijeneApiError } from '../api/cijeneApi.js';
+import { profileStore, profilesStore, switchProfile, createProfile, deleteProfile } from '../store.js';
+import { loadIndex, getAllCities, getChainsInCity, getStoresInCity, LocalPricesError } from '../api/localPrices.js';
 
 export function renderUserProfile(container) {
   const profile = profileStore.get();
@@ -185,49 +185,28 @@ export function renderUserProfile(container) {
 }
 
 // ── Supermarkets section ───────────────────────────────────────────────────
+// Flow: city (select) → chains operating in that city (checkboxes) →
+// for each ticked chain, an "Addresses" toggle reveals per-store checkboxes.
+// All data is read from the local price catalog (data/prices/).
 
 function renderSupermarketsSection(profile) {
-  const apiKey = apiConfigStore.get().cijeneApiKey || '';
   const city = profile.city || '';
-  const hasKey = !!apiKey.trim();
-
   return `
     <div class="form-group">
-      <label for="cijene-api-key">Cijene API key</label>
-      <input type="password" id="cijene-api-key"
-        placeholder="Paste your API key (email info@dobarkod.hr to request one)"
-        value="${escHtml(apiKey)}"
-        autocomplete="off">
-      <small class="nt-hint">Free tier: 10,000 queries/day. Stored locally in your browser only.</small>
+      <label for="city-select">City</label>
+      <select id="city-select">
+        <option value="">— loading cities… —</option>
+        ${city ? `<option value="${escHtml(city)}" selected>${escHtml(city)}</option>` : ''}
+      </select>
+      <small class="nt-hint">Cities come from the price catalog (<code>data/prices/</code>). Refresh via the RefreshPrices skill.</small>
     </div>
 
-    <div class="form-group">
-      <label for="city">City</label>
-      <input type="text" id="city"
-        placeholder="e.g. Zagreb"
-        value="${escHtml(city)}"
-        autocomplete="off">
-    </div>
-
-    <div class="form-group">
+    <div class="form-group" id="chains-group" ${!city ? 'hidden' : ''}>
       <div class="nutrition-targets-header">
-        <span>Preferred chains</span>
-        <button type="button" class="btn btn-ghost btn-sm" id="load-chains-btn" ${!hasKey ? 'disabled' : ''}>
-          ${hasKey ? '↺ Load chains' : 'Enter API key first'}
-        </button>
+        <span>Supermarkets in <strong id="chains-city-label">${escHtml(city)}</strong></span>
       </div>
       <div id="chains-list" class="sm-chains-list">
-        ${renderChainsFromProfile(profile)}
-      </div>
-    </div>
-
-    <div class="form-group" id="stores-group" ${!(profile.selectedChains?.length && city) ? 'hidden' : ''}>
-      <div class="nutrition-targets-header">
-        <span>Stores in ${escHtml(city || 'your city')}</span>
-        <button type="button" class="btn btn-ghost btn-sm" id="load-stores-btn" ${!hasKey ? 'disabled' : ''}>↺ Load stores</button>
-      </div>
-      <div id="stores-list" class="sm-stores-list">
-        ${renderStoresFromProfile(profile)}
+        <small class="nt-hint">Pick a city first.</small>
       </div>
     </div>
 
@@ -237,64 +216,58 @@ function renderSupermarketsSection(profile) {
   `;
 }
 
-function renderChainsFromProfile(profile) {
-  const selected = new Set(profile.selectedChains || []);
-  const known = profile.knownChains || [];
-  if (known.length === 0) {
-    return `<small class="nt-hint">No chains loaded yet. Click "Load chains" above.</small>`;
+function renderChainsForCity(cityChains, profile) {
+  if (!cityChains.length) {
+    return `<small class="nt-hint">No chains in the catalog cover this city.</small>`;
   }
-  return known.map(code => `
-    <label class="sm-chain-chip">
-      <input type="checkbox" class="sm-chain-cb" data-chain="${escHtml(code)}" ${selected.has(code) ? 'checked' : ''}>
-      <span>${escHtml(code)}</span>
-    </label>
-  `).join('');
+  const selected = new Set(profile.selectedChains || []);
+  const expanded = new Set(profile._uiExpandedChains || []);
+  return cityChains.map(c => {
+    const isChecked  = selected.has(c.code);
+    const isExpanded = expanded.has(c.code);
+    return `
+      <div class="sm-chain-row">
+        <label class="sm-chain-chip">
+          <input type="checkbox" class="sm-chain-cb" data-chain="${escHtml(c.code)}" ${isChecked ? 'checked' : ''}>
+          <span>${escHtml(c.displayName || c.code)}</span>
+        </label>
+        <button type="button" class="btn btn-ghost btn-sm sm-chain-toggle"
+          data-chain="${escHtml(c.code)}"
+          ${!isChecked ? 'disabled' : ''}
+          aria-expanded="${isExpanded ? 'true' : 'false'}">
+          ${isExpanded ? '▾ Hide addresses' : '▸ Choose addresses'}
+        </button>
+        <div class="sm-chain-addresses" data-chain="${escHtml(c.code)}" ${isExpanded ? '' : 'hidden'}>
+          <small class="nt-hint">Loading…</small>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
-function renderStoresFromProfile(profile) {
-  const selectedChains = profile.selectedChains || [];
-  const stores = profile.knownStores || []; // [{chain_code, code, address, city}]
+function renderAddressCheckboxes(chainCode, stores, profile) {
+  if (!stores.length) {
+    return `<small class="nt-hint">No stores for this chain in the selected city.</small>`;
+  }
   const selectedIds = new Set(profile.selectedStoreIds || []);
-  if (stores.length === 0) {
-    return `<small class="nt-hint">No stores loaded yet. Click "Load stores" above.</small>`;
-  }
-  const byChain = {};
-  for (const s of stores) {
-    if (!selectedChains.includes(s.chain_code)) continue;
-    (byChain[s.chain_code] ||= []).push(s);
-  }
-  const keys = Object.keys(byChain);
-  if (keys.length === 0) {
-    return `<small class="nt-hint">No stores match your selected chains. Adjust chains or city.</small>`;
-  }
-  return keys.map(chain => `
-    <div class="sm-store-group">
-      <div class="sm-store-group-title">${escHtml(chain)}</div>
-      <div class="sm-store-group-list">
-        ${byChain[chain].map(s => {
-          const id = `${s.chain_code}:${s.code}`;
-          const label = [s.address, s.city].filter(Boolean).join(', ') || s.code;
-          return `
-            <label class="sm-store-chip">
-              <input type="checkbox" class="sm-store-cb" data-sid="${escHtml(id)}" ${selectedIds.has(id) ? 'checked' : ''}>
-              <span>${escHtml(label)}</span>
-            </label>
-          `;
-        }).join('')}
-      </div>
-    </div>
-  `).join('');
+  return stores.map(s => {
+    const id = `${chainCode}:${s.code}`;
+    const label = s.address ? `${s.address}${s.zipcode ? ` · ${s.zipcode}` : ''}` : s.code;
+    return `
+      <label class="sm-store-chip">
+        <input type="checkbox" class="sm-store-cb" data-sid="${escHtml(id)}" ${selectedIds.has(id) ? 'checked' : ''}>
+        <span>${escHtml(label)}</span>
+      </label>
+    `;
+  }).join('');
 }
 
 function bindSupermarketsEvents(container) {
-  const keyInput   = container.querySelector('#cijene-api-key');
-  const cityInput  = container.querySelector('#city');
+  const citySelect = container.querySelector('#city-select');
+  const chainsGrp  = container.querySelector('#chains-group');
   const chainsList = container.querySelector('#chains-list');
-  const storesGrp  = container.querySelector('#stores-group');
-  const storesList = container.querySelector('#stores-list');
+  const cityLabel  = container.querySelector('#chains-city-label');
   const feedback   = container.querySelector('#sm-feedback');
-  const loadChainsBtn = container.querySelector('#load-chains-btn');
-  const loadStoresBtn = container.querySelector('#load-stores-btn');
 
   function setFeedback(msg, isError) {
     if (!feedback) return;
@@ -303,87 +276,133 @@ function bindSupermarketsEvents(container) {
     feedback.style.color = isError ? 'var(--color-danger, #c0392b)' : '';
   }
 
-  // Save API key on blur
-  keyInput?.addEventListener('change', () => {
-    apiConfigStore.set({ cijeneApiKey: keyInput.value.trim() });
-    const hasKey = !!keyInput.value.trim();
-    if (loadChainsBtn) {
-      loadChainsBtn.disabled = !hasKey;
-      loadChainsBtn.textContent = hasKey ? '↺ Load chains' : 'Enter API key first';
+  // Populate city dropdown from catalog
+  getAllCities()
+    .then(cities => {
+      const current = profileStore.get().city || '';
+      citySelect.innerHTML = `
+        <option value="">— select city —</option>
+        ${cities.map(c => `<option value="${escHtml(c)}" ${c === current ? 'selected' : ''}>${escHtml(c)}</option>`).join('')}
+      `;
+      if (current) refreshChainsForCity(current);
+    })
+    .catch(err => {
+      citySelect.innerHTML = `<option value="">— catalog unavailable —</option>`;
+      setFeedback(err instanceof LocalPricesError ? err.message : 'Failed to load cities.', true);
+    });
+
+  async function refreshChainsForCity(city) {
+    if (!city) {
+      chainsGrp.hidden = true;
+      return;
     }
-    if (loadStoresBtn) loadStoresBtn.disabled = !hasKey;
-  });
-
-  // Save city on blur
-  cityInput?.addEventListener('change', () => {
-    profileStore.set({ city: cityInput.value.trim() });
-  });
-
-  // Load chains
-  loadChainsBtn?.addEventListener('click', async () => {
-    setFeedback('Loading chains…');
-    loadChainsBtn.disabled = true;
+    chainsGrp.hidden = false;
+    if (cityLabel) cityLabel.textContent = city;
+    chainsList.innerHTML = `<small class="nt-hint">Loading chains…</small>`;
     try {
-      const result = await listChains();
-      const codes = Array.isArray(result) ? result : (result?.chains || []);
-      const flat = codes.map(c => typeof c === 'string' ? c : (c.code || c.chain_code)).filter(Boolean);
-      profileStore.set(prev => ({ ...prev, knownChains: flat }));
-      chainsList.innerHTML = renderChainsFromProfile(profileStore.get());
-      setFeedback(`Loaded ${flat.length} chains.`);
+      const cityChains = await getChainsInCity(city);
+      chainsList.innerHTML = renderChainsForCity(cityChains, profileStore.get());
     } catch (err) {
-      setFeedback(err instanceof CijeneApiError ? err.message : 'Failed to load chains.', true);
-    } finally {
-      loadChainsBtn.disabled = false;
+      chainsList.innerHTML = `<small class="nt-hint">Failed to load chains: ${escHtml(err.message || String(err))}</small>`;
+    }
+  }
+
+  citySelect.addEventListener('change', () => {
+    const city = citySelect.value.trim();
+    // Reset address-level selections when city changes so stale IDs don't linger
+    profileStore.set(prev => ({
+      ...prev,
+      city,
+      selectedStoreIds: [],
+      _uiExpandedChains: [],
+    }));
+    refreshChainsForCity(city);
+  });
+
+  // Toggle chain selection (checkbox)
+  chainsList.addEventListener('change', (e) => {
+    if (e.target.classList.contains('sm-chain-cb')) {
+      const code = e.target.dataset.chain;
+      const checked = e.target.checked;
+      const p = profileStore.get();
+      const selected = new Set(p.selectedChains || []);
+      const expanded = new Set(p._uiExpandedChains || []);
+      if (checked) {
+        selected.add(code);
+      } else {
+        selected.delete(code);
+        expanded.delete(code);
+        // Drop addresses for this chain since the chain is no longer selected
+        const prefix = code + ':';
+        const remainingIds = (p.selectedStoreIds || []).filter(sid => !sid.startsWith(prefix));
+        profileStore.set(prev => ({
+          ...prev,
+          selectedChains: Array.from(selected),
+          selectedStoreIds: remainingIds,
+          _uiExpandedChains: Array.from(expanded),
+        }));
+        // Update the row in place: disable the toggle + hide its address panel
+        const row = e.target.closest('.sm-chain-row');
+        row?.querySelector('.sm-chain-toggle')?.setAttribute('disabled', '');
+        const panel = row?.querySelector('.sm-chain-addresses');
+        if (panel) { panel.hidden = true; }
+        const toggleBtn = row?.querySelector('.sm-chain-toggle');
+        if (toggleBtn) {
+          toggleBtn.textContent = '▸ Choose addresses';
+          toggleBtn.setAttribute('aria-expanded', 'false');
+        }
+        return;
+      }
+      profileStore.set(prev => ({ ...prev, selectedChains: Array.from(selected) }));
+      // Enable the address toggle button for this row
+      const row = e.target.closest('.sm-chain-row');
+      row?.querySelector('.sm-chain-toggle')?.removeAttribute('disabled');
+      return;
+    }
+
+    // Toggle individual store checkbox
+    if (e.target.classList.contains('sm-store-cb')) {
+      const sid = e.target.dataset.sid;
+      const current = new Set(profileStore.get().selectedStoreIds || []);
+      if (e.target.checked) current.add(sid); else current.delete(sid);
+      profileStore.set(prev => ({ ...prev, selectedStoreIds: Array.from(current) }));
     }
   });
 
-  // Toggle chain selection
-  chainsList?.addEventListener('change', (e) => {
-    if (!e.target.classList.contains('sm-chain-cb')) return;
-    const code = e.target.dataset.chain;
-    const current = new Set(profileStore.get().selectedChains || []);
-    if (e.target.checked) current.add(code); else current.delete(code);
-    profileStore.set(prev => ({ ...prev, selectedChains: Array.from(current) }));
-    // Show stores section if we have chains + city
+  // "Choose addresses" button — expand/collapse + lazy-load the store list
+  chainsList.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.sm-chain-toggle');
+    if (!btn || btn.disabled) return;
+    const code = btn.dataset.chain;
+    const row  = btn.closest('.sm-chain-row');
+    const panel = row?.querySelector('.sm-chain-addresses');
+    if (!panel) return;
+    const isOpen = !panel.hidden;
     const p = profileStore.get();
-    if (storesGrp) storesGrp.hidden = !(p.selectedChains?.length && p.city);
-    // Re-render stores list to hide deselected chains
-    if (storesList) storesList.innerHTML = renderStoresFromProfile(profileStore.get());
-  });
+    const expanded = new Set(p._uiExpandedChains || []);
 
-  // Load stores
-  loadStoresBtn?.addEventListener('click', async () => {
-    const p = profileStore.get();
-    if (!p.city) { setFeedback('Enter a city first.', true); return; }
-    if (!p.selectedChains?.length) { setFeedback('Pick at least one chain first.', true); return; }
-    setFeedback('Loading stores…');
-    loadStoresBtn.disabled = true;
+    if (isOpen) {
+      panel.hidden = true;
+      btn.textContent = '▸ Choose addresses';
+      btn.setAttribute('aria-expanded', 'false');
+      expanded.delete(code);
+      profileStore.set(prev => ({ ...prev, _uiExpandedChains: Array.from(expanded) }));
+      return;
+    }
+
+    panel.hidden = false;
+    btn.textContent = '▾ Hide addresses';
+    btn.setAttribute('aria-expanded', 'true');
+    expanded.add(code);
+    profileStore.set(prev => ({ ...prev, _uiExpandedChains: Array.from(expanded) }));
+
+    panel.innerHTML = `<small class="nt-hint">Loading addresses…</small>`;
     try {
-      const result = await listStores({ chains: p.selectedChains, city: p.city });
-      const rawStores = Array.isArray(result) ? result : (result?.stores || []);
-      const stores = rawStores.map(s => ({
-        chain_code: s.chain_code || s.chain,
-        code:       s.code || s.store_code,
-        address:    s.address || '',
-        city:       s.city || '',
-      })).filter(s => s.chain_code && s.code);
-      profileStore.set(prev => ({ ...prev, knownStores: stores }));
-      storesList.innerHTML = renderStoresFromProfile(profileStore.get());
-      setFeedback(`Loaded ${stores.length} stores.`);
+      const stores = await getStoresInCity(code, profileStore.get().city);
+      panel.innerHTML = renderAddressCheckboxes(code, stores, profileStore.get());
     } catch (err) {
-      setFeedback(err instanceof CijeneApiError ? err.message : 'Failed to load stores.', true);
-    } finally {
-      loadStoresBtn.disabled = false;
+      panel.innerHTML = `<small class="nt-hint">Failed to load addresses: ${escHtml(err.message || String(err))}</small>`;
     }
-  });
-
-  // Toggle store selection
-  storesList?.addEventListener('change', (e) => {
-    if (!e.target.classList.contains('sm-store-cb')) return;
-    const sid = e.target.dataset.sid;
-    const current = new Set(profileStore.get().selectedStoreIds || []);
-    if (e.target.checked) current.add(sid); else current.delete(sid);
-    profileStore.set(prev => ({ ...prev, selectedStoreIds: Array.from(current) }));
   });
 }
 

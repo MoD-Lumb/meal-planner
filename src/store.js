@@ -327,8 +327,3 @@ export function removeCustomFood(id) {
 
 export const prefsStore = createStore(`mp-${ACTIVE_ID}-prefs`, { sidebarOpen: true });
 
-// ── Cijene API config (global, not profile-scoped) ─────────────────────────
-// Stores the cijene-api Bearer token. Kept outside profile scope because the
-// key is issued by the API provider per account, not per meal-plan persona.
-
-export const apiConfigStore = createStore('mp-api-config', { cijeneApiKey: '' });

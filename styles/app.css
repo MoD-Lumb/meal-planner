@@ -1814,8 +1814,35 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 
 .sm-chains-list {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sm-chain-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "chip  toggle"
+    "addrs addrs";
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: 1px dashed var(--gray-200, #e4e7eb);
+}
+
+.sm-chain-row:last-child {
+  border-bottom: none;
+}
+
+.sm-chain-row > .sm-chain-chip    { grid-area: chip; justify-self: start; }
+.sm-chain-row > .sm-chain-toggle  { grid-area: toggle; }
+.sm-chain-row > .sm-chain-addresses { grid-area: addrs; }
+
+.sm-chain-addresses {
+  display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+  padding: var(--space-2) 0 var(--space-1) var(--space-4);
 }
 
 .sm-chain-chip,
