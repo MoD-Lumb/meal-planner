@@ -1,5 +1,6 @@
 import { foodDatabase, FOOD_CATEGORIES } from '../data/foodDatabase.js';
-import { customFoodsStore, addCustomFood, removeCustomFood } from '../store.js';
+import { customFoodsStore, addCustomFood, removeCustomFood, countLinks } from '../store.js';
+import { openLinkProductsModal } from './linkProductsModal.js';
 
 let currentCategory = 'All';
 let currentSearch = '';
@@ -102,6 +103,9 @@ function renderTable(foods) {
             <td class="num-col">${food.nutritionPer100g.fat}</td>
             <td class="unit-col">${food.availableUnits?.[0] || 'g'}</td>
             <td class="action-col">
+              <button class="btn btn-ghost btn-sm link-products-btn" data-id="${food.id}" title="Link supermarket products">
+                ${(() => { const n = countLinks(food.id); return n ? `Linked <span class="linked-badge">${n}</span>` : 'Link products'; })()}
+              </button>
               ${food.isCustom ? `
                 <button class="del-food-btn" data-id="${food.id}" title="Delete">✕</button>
               ` : ''}
@@ -212,6 +216,16 @@ function bindEvents(container) {
       removeCustomFood(id);
       refreshTable(container);
     }
+  });
+
+  // Open link-products modal
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('.link-products-btn');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const food = getAllFoods().find(f => f.id === id);
+    if (!food) return;
+    openLinkProductsModal(food, () => refreshTable(container));
   });
 }
 

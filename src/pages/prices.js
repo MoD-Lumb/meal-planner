@@ -1,6 +1,6 @@
-import { menuStore, profileStore } from '../store.js';
+import { menuStore, profileStore, getProductLinks, getGroceryChoicesForChain } from '../store.js';
 import { aggregateGroceries } from '../utils/groceryAggregator.js';
-import { loadIndex, findBestMatch, LocalPricesError } from '../api/localPrices.js';
+import { loadIndex, findBestMatch, getProductsByIds, LocalPricesError } from '../api/localPrices.js';
 
 export function renderPrices(container) {
   const profile = profileStore.get();
@@ -78,46 +78,54 @@ async function runComparison(container, index, profile, items) {
   content.innerHTML = `<p class="nt-hint">Matching ${items.length} items across ${chains.length} chains…</p>`;
 
   try {
-    // matches[itemIndex][chainCode] = product | null
+    // matches[itemIndex][chainCode] = { product, linked } | null
     const matchesByChain = {};
     for (const chain of chains) {
       const perItem = [];
       for (const item of items) {
-        const p = await findBestMatch(chain, item.name);
-        perItem.push(p || null);
+        perItem.push(await matchForItem(chain, item));
       }
       matchesByChain[chain] = perItem;
     }
 
-    const totals = chains.map(chain => {
-      const perItem = matchesByChain[chain];
-      let total = 0;
-      let foundCount = 0;
-      for (const p of perItem) {
-        if (p && typeof p.minPrice === 'number') {
-          total += p.minPrice;
-          foundCount++;
-        }
-      }
-      return { chain, total, foundCount };
-    });
+    // Per-item include state — unchecked rows are skipped in summary totals.
+    const included = new Set(items.map((_, i) => i));
 
-    const ranked = [...totals].sort((a, b) => b.foundCount - a.foundCount || a.total - b.total);
-    const cheapest = ranked[0];
+    function computeTotals() {
+      return chains.map(chain => {
+        const perItem = matchesByChain[chain];
+        let total = 0, foundCount = 0;
+        perItem.forEach((entry, i) => {
+          if (!included.has(i)) return;
+          const p = entry?.product;
+          if (p && typeof p.minPrice === 'number') {
+            total += p.minPrice;
+            foundCount++;
+          }
+        });
+        return { chain, total, foundCount };
+      });
+    }
+
+    function summaryHtml() {
+      const totals = computeTotals();
+      const ranked = [...totals].sort((a, b) => b.foundCount - a.foundCount || a.total - b.total);
+      const cheapest = ranked[0];
+      const denom = included.size;
+      return totals.map(t => {
+        const meta = chainMeta.get(t.chain);
+        return `
+          <div class="prices-card ${t.chain === cheapest?.chain ? 'prices-card--best' : ''}">
+            <div class="prices-card-chain">${escHtml(meta?.displayName || t.chain)}${t.chain === cheapest?.chain ? ' · cheapest' : ''}</div>
+            <div class="prices-card-total">€${t.total.toFixed(2)}</div>
+            <div class="prices-card-coverage">${t.foundCount}/${denom} items matched</div>
+          </div>
+        `;
+      }).join('');
+    }
 
     content.innerHTML = `
-      <div class="prices-summary">
-        ${totals.map(t => {
-          const meta = chainMeta.get(t.chain);
-          return `
-            <div class="prices-card ${t.chain === cheapest?.chain ? 'prices-card--best' : ''}">
-              <div class="prices-card-chain">${escHtml(meta?.displayName || t.chain)}${t.chain === cheapest?.chain ? ' · cheapest' : ''}</div>
-              <div class="prices-card-total">€${t.total.toFixed(2)}</div>
-              <div class="prices-card-coverage">${t.foundCount}/${items.length} items matched</div>
-            </div>
-          `;
-        }).join('')}
-      </div>
+      <div class="prices-summary" id="prices-summary">${summaryHtml()}</div>
 
       <div class="profile-card">
         <h3 style="margin-top:0">Breakdown per item</h3>
@@ -127,28 +135,114 @@ async function runComparison(container, index, profile, items) {
             <tr>
               <th>Your ingredient</th>
               ${chains.map(c => `<th>${escHtml(chainMeta.get(c)?.displayName || c)}</th>`).join('')}
+              <th class="prices-include-col" title="Untick to exclude from totals">Include</th>
             </tr>
           </thead>
           <tbody>
             ${items.map((it, i) => `
-              <tr>
+              <tr data-row="${i}">
                 <td>${escHtml(it.name)}</td>
                 ${chains.map(c => {
-                  const p = matchesByChain[c][i];
+                  const entry = matchesByChain[c][i];
+                  const p = entry?.product;
                   if (!p) return `<td><em>—</em></td>`;
-                  return `<td title="${escHtml(p.name)}">€${Number(p.minPrice).toFixed(2)}<br><small class="nt-hint">${escHtml(truncate(p.name, 40))}</small></td>`;
+                  const tag = sourceTag(entry.source);
+                  const np = normalizedPrice(p);
+                  const npStr = np ? `€${np.value.toFixed(2)}${np.label.slice(1)}` : '';
+                  return `<td title="${escHtml(p.name)}">€${Number(p.minPrice).toFixed(2)}${tag}<br><small class="nt-hint">${escHtml(truncate(p.name, 40))}${npStr ? ` · ${npStr}` : ''}</small></td>`;
                 }).join('')}
+                <td class="prices-include-col">
+                  <input type="checkbox" class="prices-include-cb" data-item="${i}" checked aria-label="Include in totals">
+                </td>
               </tr>
             `).join('')}
           </tbody>
         </table>
         </div>
-        <p class="nt-hint">Totals sum one unit-price per matched product (lowest price across that chain's stores). Quantity-aware totals (kg/g/pcs scaling) are a next step.</p>
+        <p class="nt-hint">Totals sum one unit-price per matched product (lowest price across that chain's stores). Cheapest is picked by €/100g, €/100ml, or €/piece depending on unit.</p>
       </div>
     `;
+
+    content.addEventListener('change', (e) => {
+      const cb = e.target.closest('.prices-include-cb');
+      if (!cb) return;
+      const i = Number(cb.dataset.item);
+      if (cb.checked) included.add(i); else included.delete(i);
+      const row = cb.closest('tr');
+      if (row) row.classList.toggle('prices-row-excluded', !cb.checked);
+      const summary = content.querySelector('#prices-summary');
+      if (summary) summary.innerHTML = summaryHtml();
+    });
   } catch (err) {
     content.innerHTML = `<div class="empty-state"><h3>Failed to compare</h3><p>${escHtml(err instanceof LocalPricesError ? err.message : String(err))}</p></div>`;
   }
+}
+
+// Normalize a product's price to a common unit so different pack sizes can
+// be compared fairly. Mass → €/100g, volume → €/100ml, else → €/piece.
+// Returns null if quantity/price aren't usable.
+function normalizedPrice(product) {
+  const qty = Number(product?.quantity);
+  const unit = String(product?.unit || '').toLowerCase().trim();
+  const price = Number(product?.minPrice);
+  if (!isFinite(qty) || qty <= 0 || !isFinite(price)) return null;
+  if (unit === 'g')  return { value: (price / qty) * 100, label: '€/100g' };
+  if (unit === 'kg') return { value: (price / (qty * 1000)) * 100, label: '€/100g' };
+  if (unit === 'ml') return { value: (price / qty) * 100, label: '€/100ml' };
+  if (unit === 'l')  return { value: (price / (qty * 1000)) * 100, label: '€/100ml' };
+  return { value: price / qty, label: '€/pc' };
+}
+
+// Pick cheapest by normalized unit price; break ties by raw minPrice so the
+// same-unit-rate product in the smaller (usually less wasteful) pack wins.
+function pickCheapest(products) {
+  let best = null;
+  let bestKey = Number.POSITIVE_INFINITY;
+  for (const p of products) {
+    const np = normalizedPrice(p);
+    const key = np ? np.value : Number.POSITIVE_INFINITY;
+    if (best == null || key < bestKey ||
+        (key === bestKey && Number(p.minPrice) < Number(best.minPrice))) {
+      best = p;
+      bestKey = key;
+    }
+  }
+  return best;
+}
+
+// 3-tier resolution — returns { product, source } or null.
+// 1. Weekly Groceries picks for this chain — cheapest of the user's picks.
+// 2. Linked products pool — cheapest of the ingredient's chain-wide links.
+// 3. Token-overlap auto-match against the chain's catalog.
+async function matchForItem(chain, item) {
+  if (item.foodId) {
+    const pickIds = getGroceryChoicesForChain(item.foodId, chain);
+    if (pickIds.length > 0) {
+      const priced = (await getProductsByIds(chain, pickIds))
+        .filter(p => typeof p.minPrice === 'number');
+      if (priced.length > 0) return { product: pickCheapest(priced), source: 'pick' };
+    }
+  }
+
+  const ids = item.foodId ? getProductLinks(item.foodId, chain) : [];
+  if (ids.length > 0) {
+    const priced = (await getProductsByIds(chain, ids))
+      .filter(p => typeof p.minPrice === 'number');
+    if (priced.length > 0) return { product: pickCheapest(priced), source: 'link' };
+  }
+
+  const p = await findBestMatch(chain, item.name);
+  return p ? { product: p, source: 'auto' } : null;
+}
+
+function sourceTag(source) {
+  if (source === 'pick') {
+    return ` <span class="picked-dot" title="Cheapest of your weekly picks">·picked</span>`;
+  }
+  if (source === 'link') {
+    return ` <span class="linked-dot" title="Cheapest of your linked products">·linked</span>`;
+  }
+  return '';
 }
 
 function truncate(s, n) {

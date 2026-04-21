@@ -1883,6 +1883,246 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
   gap: var(--space-2);
 }
 
+/* ── Link-products modal (Ingredients page) ───────────────────────────── */
+
+.lp-modal-box {
+  width: min(720px, 96vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-modal-body {
+  padding: var(--space-3) var(--space-4);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.lp-modal-footer {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--gray-200, #e5e7eb);
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.lp-notice {
+  padding: var(--space-2) var(--space-3);
+  background: var(--gray-50, #f6f8fa);
+  border: 1px solid var(--gray-200, #e5e7eb);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.lp-notice-error {
+  background: #fdecea;
+  border-color: #f5c2c0;
+  color: #721c24;
+}
+
+.lp-chains {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.lp-chain-card {
+  border: 1px solid var(--gray-200, #e5e7eb);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.lp-chain-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--gray-100, #eef2f6);
+  font-weight: 600;
+}
+
+.lp-chain-list {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2);
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.lp-product {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.lp-product:hover { background: var(--gray-50, #f6f8fa); }
+
+.lp-product-pinned {
+  background: #fffbe6;
+}
+
+.lp-product:has(input:checked) {
+  background: #e6f4ea;
+}
+
+.lp-product-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lp-product-meta {
+  font-size: 12px;
+}
+
+.lp-product-price {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--gray-800, #1f2328);
+}
+
+/* "Linked (N)" badge on the Ingredients table row */
+.linked-badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 6px;
+  margin-left: 4px;
+  border-radius: 999px;
+  background: var(--green-100, #e6f4ea);
+  color: var(--green-700, #1e7e34);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.link-products-btn {
+  white-space: nowrap;
+}
+
+/* Linked-cell marker on Prices table */
+.linked-dot {
+  font-size: 10px;
+  color: var(--green-700, #1e7e34);
+  margin-left: 2px;
+  white-space: nowrap;
+}
+
+/* Stronger marker for the weekly-picked product on Prices table */
+.picked-dot {
+  font-size: 10px;
+  color: #b7791f; /* amber-700 */
+  font-weight: 700;
+  margin-left: 2px;
+  white-space: nowrap;
+}
+
+/* ── Groceries: Pick product button + sub-panel ──────────────────────── */
+
+.grocery-pick-btn {
+  appearance: none;
+  border: 1px solid var(--gray-300, #d1d5db);
+  background: #fff;
+  color: var(--gray-800, #1f2937);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 1.3;
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: auto;
+}
+.grocery-pick-btn:hover { background: var(--gray-50, #f9fafb); }
+.grocery-pick-btn.expanded { background: var(--green-50, #f0fdf4); border-color: var(--green-300, #86efac); }
+
+.grocery-pick-btn--set {
+  background: #fff7ed;              /* amber-50  */
+  border-color: #fcd34d;             /* amber-300 */
+  color: #92400e;                    /* amber-800 */
+  font-weight: 600;
+}
+.grocery-pick-btn--set:hover { background: #ffedd5; }
+
+.grocery-pick-chev,
+.grocery-pick-edit { opacity: 0.7; margin-left: 4px; }
+
+.grocery-pick-panel {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  background: var(--gray-50, #f9fafb);
+  border: 1px solid var(--gray-200, #e5e7eb);
+  border-radius: 8px;
+}
+
+.grocery-pick-chain + .grocery-pick-chain { margin-top: var(--space-3); }
+
+.grocery-pick-chain-header {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-600, #4b5563);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.grocery-pick-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.grocery-pick-option {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid transparent;
+}
+.grocery-pick-option:hover { background: var(--green-50, #f0fdf4); }
+.grocery-pick-option--checked {
+  background: #fff7ed;
+  border-color: #fcd34d;
+}
+
+.grocery-pick-name { font-size: 13px; color: var(--gray-900, #111827); }
+.grocery-pick-meta { font-size: 11px; }
+.grocery-pick-price {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-800, #1f2937);
+  min-width: 52px;
+  text-align: right;
+}
+
+.grocery-pick-footer {
+  margin-top: var(--space-2);
+  text-align: right;
+}
+
+.grocery-pick-clear {
+  font-size: 12px;
+  color: var(--gray-600, #4b5563);
+}
+
 /* ── Prices page ───────────────────────────────────────────────────────── */
 
 .prices-summary {
@@ -1939,4 +2179,27 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
   font-weight: 600;
   text-transform: capitalize;
   background: var(--gray-50, #f9fafb);
+}
+
+.prices-include-col {
+  width: 1%;
+  text-align: center !important;
+  white-space: nowrap;
+}
+
+.prices-include-cb {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--green-600, #16a34a);
+}
+
+.prices-row-excluded td {
+  opacity: 0.45;
+  text-decoration: line-through;
+  text-decoration-color: var(--gray-400, #9ca3af);
+}
+.prices-row-excluded td.prices-include-col {
+  opacity: 1;
+  text-decoration: none;
 }

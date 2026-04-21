@@ -321,6 +321,139 @@ export function addCustomFood(food) {
 export function removeCustomFood(id) {
   const current = customFoodsStore.get().foods;
   customFoodsStore.set({ foods: current.filter(f => f.id !== id) });
+  // Orphan cleanup — drop any saved product links for this foodId.
+  const links = productLinksStore.get().links;
+  if (links && Object.prototype.hasOwnProperty.call(links, id)) {
+    const { [id]: _drop, ...rest } = links;
+    productLinksStore.set({ links: rest });
+  }
+}
+
+// ── Product Links Store ────────────────────────────────────────────────────
+// Maps an ingredient (by stable foodId) to user-picked product ids per chain.
+// Shape: { links: { [foodId]: { [chainCode]: [productId, ...] } } }
+
+export const productLinksStore = createStore(`mp-${ACTIVE_ID}-product-links`, { links: {} });
+
+export function getProductLinks(foodId, chainCode) {
+  if (!foodId || !chainCode) return [];
+  return productLinksStore.get().links?.[foodId]?.[chainCode] || [];
+}
+
+export function setProductLinks(foodId, chainCode, ids) {
+  if (!foodId || !chainCode) return;
+  const cleanIds = Array.from(new Set((ids || []).map(String).filter(Boolean)));
+  productLinksStore.set(prev => {
+    const links = { ...(prev.links || {}) };
+    const perFood = { ...(links[foodId] || {}) };
+    if (cleanIds.length === 0) {
+      delete perFood[chainCode];
+    } else {
+      perFood[chainCode] = cleanIds;
+    }
+    if (Object.keys(perFood).length === 0) {
+      delete links[foodId];
+    } else {
+      links[foodId] = perFood;
+    }
+    return { links };
+  });
+}
+
+export function hasAnyLinks(foodId) {
+  if (!foodId) return false;
+  const perFood = productLinksStore.get().links?.[foodId];
+  if (!perFood) return false;
+  return Object.values(perFood).some(arr => Array.isArray(arr) && arr.length > 0);
+}
+
+export function countLinks(foodId) {
+  if (!foodId) return 0;
+  const perFood = productLinksStore.get().links?.[foodId];
+  if (!perFood) return 0;
+  return Object.values(perFood).reduce((n, arr) => n + (Array.isArray(arr) ? arr.length : 0), 0);
+}
+
+// ── Grocery Choices Store ──────────────────────────────────────────────────
+// Per-week shortlist of acceptable products per ingredient, keyed by chain.
+// Each chain can have multiple picks — Prices takes the cheapest of the
+// chain's picks. Picks reset every ISO week so the user re-decides weekly.
+// Shape: { weekKey: "YYYY-Www", choices: { [foodId]: { [chainCode]: [productId, ...] } } }
+
+export const groceryChoicesStore = createStore(`mp-${ACTIVE_ID}-grocery-choices`, { weekKey: '', choices: {} });
+
+export function currentWeekKey(date = new Date()) {
+  // ISO 8601 week: Thursday of the week determines the year.
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+}
+
+// Returns { [chainCode]: [productId, ...] } for the current week, else {}.
+export function getGroceryChoices(foodId) {
+  if (!foodId) return {};
+  const { weekKey, choices } = groceryChoicesStore.get();
+  if (weekKey !== currentWeekKey()) return {};
+  return choices?.[foodId] || {};
+}
+
+export function getGroceryChoicesForChain(foodId, chainCode) {
+  if (!foodId || !chainCode) return [];
+  return getGroceryChoices(foodId)[chainCode] || [];
+}
+
+// Flip a single product's pick state for a given chain. If a stale week is
+// detected on write, existing choices are wiped first so the new pick starts
+// a fresh week.
+export function toggleGroceryChoice(foodId, chainCode, productId) {
+  if (!foodId || !chainCode || productId == null) return;
+  const pid = String(productId);
+  const wk = currentWeekKey();
+  groceryChoicesStore.set(prev => {
+    const base = prev.weekKey === wk ? (prev.choices || {}) : {};
+    const perFood = { ...(base[foodId] || {}) };
+    const cur = Array.isArray(perFood[chainCode]) ? perFood[chainCode].slice() : [];
+    const idx = cur.indexOf(pid);
+    if (idx >= 0) cur.splice(idx, 1); else cur.push(pid);
+    if (cur.length === 0) {
+      delete perFood[chainCode];
+    } else {
+      perFood[chainCode] = cur;
+    }
+    const nextFoodMap = Object.keys(perFood).length === 0
+      ? (() => { const { [foodId]: _drop, ...rest } = base; return rest; })()
+      : { ...base, [foodId]: perFood };
+    return { weekKey: wk, choices: nextFoodMap };
+  });
+}
+
+export function clearGroceryChoices(foodId) {
+  if (!foodId) return;
+  groceryChoicesStore.set(prev => {
+    const base = prev.choices || {};
+    if (!Object.prototype.hasOwnProperty.call(base, foodId)) return prev;
+    const { [foodId]: _drop, ...rest } = base;
+    return { weekKey: prev.weekKey || currentWeekKey(), choices: rest };
+  });
+}
+
+export function hasGroceryChoices(foodId) {
+  if (!foodId) return false;
+  const map = getGroceryChoices(foodId);
+  return Object.values(map).some(arr => Array.isArray(arr) && arr.length > 0);
+}
+
+// Counts per chain for button summary — only returns entries with > 0 picks.
+export function countGroceryChoicesByChain(foodId) {
+  const map = getGroceryChoices(foodId);
+  const out = {};
+  for (const [chain, arr] of Object.entries(map)) {
+    if (Array.isArray(arr) && arr.length) out[chain] = arr.length;
+  }
+  return out;
 }
 
 // ── Preferences Store ──────────────────────────────────────────────────────

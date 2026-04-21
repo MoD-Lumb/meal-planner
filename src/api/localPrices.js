@@ -128,7 +128,20 @@ export async function getStoresInCity(chainCode, city) {
   return stores.filter(s => s.city === city);
 }
 
-// Return top-N matches for UI "pick a different product" flows (future use).
+// Cross-chain product lookup by EAN (barcode). Returns null if the chain
+// doesn't carry that exact SKU — catalog has 100% EAN coverage, so this is
+// reliable for branded goods. Private-label items usually won't match.
+export async function findByEan(chainCode, ean) {
+  if (!ean) return null;
+  const chain = await loadChain(chainCode);
+  const target = String(ean);
+  for (const p of chain.products) {
+    if (String(p.ean) === target) return p;
+  }
+  return null;
+}
+
+// Return top-N matches for UI "pick a different product" flows.
 export async function searchTop(chainCode, query, limit = 5) {
   const chain = await loadChain(chainCode);
   const tokens = normalize(query).split(' ').filter(Boolean);
@@ -140,4 +153,48 @@ export async function searchTop(chainCode, query, limit = 5) {
   }
   scored.sort((a, b) => b.s - a.s);
   return scored.slice(0, limit).map(x => x.p);
+}
+
+// Fetch products by their chain-local ids, preserving the input order.
+// Missing ids are silently dropped (useful after a catalog rebuild drops a SKU).
+export async function getProductsByIds(chainCode, ids) {
+  if (!ids || ids.length === 0) return [];
+  const chain = await loadChain(chainCode);
+  const want = new Set(ids.map(String));
+  const byId = new Map();
+  for (const p of chain.products) {
+    const key = String(p.id);
+    if (want.has(key)) byId.set(key, p);
+  }
+  const out = [];
+  for (const id of ids) {
+    const p = byId.get(String(id));
+    if (p) out.push(p);
+  }
+  return out;
+}
+
+// Merge searchTop results with already-selected products (fetched by id),
+// dedupe by id, selected first, then query-ranked. Returns [{product, selected}].
+export async function searchTopWithSelected(chainCode, query, selectedIds = [], limit = 10) {
+  const [topMatches, pinned] = await Promise.all([
+    query && query.trim() ? searchTop(chainCode, query, limit) : Promise.resolve([]),
+    getProductsByIds(chainCode, selectedIds),
+  ]);
+  const seen = new Set();
+  const out = [];
+  for (const p of pinned) {
+    const k = String(p.id);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push({ product: p, selected: true });
+  }
+  for (const p of topMatches) {
+    const k = String(p.id);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push({ product: p, selected: false });
+    if (out.length >= pinned.length + limit) break;
+  }
+  return out;
 }
