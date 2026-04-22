@@ -5,6 +5,7 @@ import {
   customMealsStore, addCustomMeal, updateCustomMeal, removeCustomMeal,
   mealPortionsStore, setMealPortions, getMealPortions,
   customFoodsStore,
+  mealOverridesStore, setMealOverride, tombstoneMeal,
 } from '../store.js';
 
 const CATEGORIES = ['all', 'breakfast', 'lunch', 'snack', 'dinner'];
@@ -28,7 +29,13 @@ export function renderMealsDatabase(container) {
 // ── Data helpers ──────────────────────────────────────────────────────────
 
 function getAllMeals() {
-  return [...mealsDatabase, ...customMealsStore.get().meals];
+  const { overrides, tombstones } = mealOverridesStore.get();
+  const tombSet = new Set(tombstones || []);
+  const builtIn = mealsDatabase
+    .filter(m => !tombSet.has(m.id))
+    .map(m => overrides?.[m.id] ? { ...m, ...overrides[m.id] } : m);
+  const custom = customMealsStore.get().meals.filter(m => !tombSet.has(m.id));
+  return [...builtIn, ...custom];
 }
 
 function findMeal(id) {
@@ -165,12 +172,10 @@ function renderMealDetail(mealId, container) {
           <h2>${escHtml(meal.name)}</h2>
           <div class="detail-cat">${catLabel(meal.category)}</div>
         </div>
-        ${custom ? `
-          <div class="detail-actions">
-            <button class="btn btn-ghost btn-sm" id="edit-meal-btn">Edit</button>
-            <button class="btn btn-ghost btn-sm detail-del-btn" id="delete-meal-btn">Delete</button>
-          </div>
-        ` : ''}
+        <div class="detail-actions">
+          <button class="btn btn-ghost btn-sm" id="edit-meal-btn">Edit</button>
+          <button class="btn btn-ghost btn-sm detail-del-btn" id="delete-meal-btn">${custom ? 'Delete' : 'Remove'}</button>
+        </div>
       </div>
 
       <!-- Portion control -->
@@ -272,8 +277,12 @@ function bindDetailEvents(mealId, container) {
   });
 
   container.querySelector('#delete-meal-btn')?.addEventListener('click', () => {
-    if (!confirm(`Delete "${meal.name}"? This cannot be undone.`)) return;
-    removeCustomMeal(mealId);
+    const isCustom = isCustomMeal(mealId);
+    const msg = isCustom
+      ? `Delete "${meal.name}"? This cannot be undone.`
+      : `Remove "${meal.name}" from the list? Built-in recipes can only come back if the app data is reset.`;
+    if (!confirm(msg)) return;
+    if (isCustom) removeCustomMeal(mealId); else tombstoneMeal(mealId);
     selectedMealId = null;
     container.querySelector('#meal-detail-panel').innerHTML = renderEmptyDetail();
     refreshCards(container);
@@ -629,7 +638,19 @@ function submitRecipeForm(container, box) {
   };
 
   if (editingMealId) {
-    updateCustomMeal(editingMealId, meal);
+    if (isCustomMeal(editingMealId)) {
+      updateCustomMeal(editingMealId, meal);
+    } else {
+      // Built-in meal edit — save as an override (merged on top of base entry).
+      setMealOverride(editingMealId, {
+        name: meal.name,
+        category: meal.category,
+        imageEmoji: meal.imageEmoji,
+        tags: meal.tags,
+        ingredients: meal.ingredients,
+        recipe: meal.recipe,
+      });
+    }
   } else {
     addCustomMeal(meal);
   }

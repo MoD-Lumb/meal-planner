@@ -1,9 +1,13 @@
 import { foodDatabase, FOOD_CATEGORIES } from '../data/foodDatabase.js';
-import { customFoodsStore, addCustomFood, removeCustomFood, countLinks } from '../store.js';
+import {
+  customFoodsStore, addCustomFood, updateCustomFood, removeCustomFood, countLinks,
+  foodOverridesStore, setFoodOverride, tombstoneFood,
+} from '../store.js';
 import { openLinkProductsModal } from './linkProductsModal.js';
 
 let currentCategory = 'All';
 let currentSearch = '';
+let editingFoodId = null;
 
 export function renderIngredients(container) {
   currentCategory = 'All';
@@ -12,8 +16,19 @@ export function renderIngredients(container) {
 }
 
 function getAllFoods() {
-  const custom = customFoodsStore.get().foods.map(f => ({ ...f, isCustom: true }));
-  return [...foodDatabase, ...custom];
+  const { overrides, tombstones } = foodOverridesStore.get();
+  const tombSet = new Set(tombstones || []);
+  const builtIn = foodDatabase
+    .filter(f => !tombSet.has(f.id))
+    .map(f => overrides?.[f.id] ? { ...f, ...overrides[f.id] } : f);
+  const custom = customFoodsStore.get().foods
+    .filter(f => !tombSet.has(f.id))
+    .map(f => ({ ...f, isCustom: true }));
+  return [...builtIn, ...custom];
+}
+
+function isCustomFoodId(id) {
+  return customFoodsStore.get().foods.some(f => f.id === id);
 }
 
 function filteredFoods() {
@@ -106,8 +121,9 @@ function renderTable(foods) {
               <button class="btn btn-ghost btn-sm link-products-btn" data-id="${food.id}" title="Link supermarket products">
                 ${(() => { const n = countLinks(food.id); return n ? `Linked <span class="linked-badge">${n}</span>` : 'Link products'; })()}
               </button>
-              ${food.isCustom ? `
-                <button class="del-food-btn" data-id="${food.id}" title="Delete">✕</button>
+              ${(food.isCustom || food.source === 'claude') ? `
+                <button class="edit-food-btn" data-id="${food.id}" title="Edit">✎</button>
+                <button class="del-food-btn" data-id="${food.id}" title="${food.isCustom ? 'Delete' : 'Remove from list'}">✕</button>
               ` : ''}
             </td>
           </tr>
@@ -118,68 +134,80 @@ function renderTable(foods) {
   `;
 }
 
-function renderAddForm() {
+function renderAddForm(food = null) {
   const categories = FOOD_CATEGORIES;
+  const isEdit = !!food;
+  const n       = food?.name ?? '';
+  const catSel  = food?.category || 'Custom';
+  const kcal    = food?.nutritionPer100g?.kcal ?? '';
+  const protein = food?.nutritionPer100g?.protein ?? '';
+  const carbs   = food?.nutritionPer100g?.carbs ?? '';
+  const fat     = food?.nutritionPer100g?.fat ?? '';
+  const unitSel = food?.availableUnits?.[0] || 'g';
+
+  const catOptions = categories.map(c =>
+    `<option value="${c}" ${c === catSel ? 'selected' : ''}>${c}</option>`
+  ).join('');
+  const customOption = `<option value="Custom" ${catSel === 'Custom' ? 'selected' : ''}>Custom</option>`;
+
+  const units = ['g','kg','ml','L','piece','slice','tbsp','tsp'];
+  const unitOptions = units.map(u =>
+    `<option value="${u}" ${u === unitSel ? 'selected' : ''}>${u}</option>`
+  ).join('');
+
   return `
     <div class="modal-header">
-      <h3>Add Custom Ingredient</h3>
+      <h3>${isEdit ? 'Edit Ingredient' : 'Add Custom Ingredient'}</h3>
       <button class="modal-close" id="modal-close">✕</button>
     </div>
     <form id="add-food-form" class="add-food-form" autocomplete="off">
 
       <div class="form-group">
         <label>Name *</label>
-        <input type="text" name="name" required placeholder="e.g. Quinoa" maxlength="60">
+        <input type="text" name="name" required placeholder="e.g. Quinoa" maxlength="60" value="${escAttr(n)}">
       </div>
 
       <div class="form-group">
         <label>Category</label>
         <select name="category">
-          ${categories.map(c => `<option value="${c}">${c}</option>`).join('')}
-          <option value="Custom" selected>Custom</option>
+          ${catOptions}
+          ${customOption}
         </select>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label>Kcal / 100g *</label>
-          <input type="number" name="kcal" required min="0" max="9999" step="0.1" placeholder="0">
+          <input type="number" name="kcal" required min="0" max="9999" step="0.1" placeholder="0" value="${escAttr(kcal)}">
         </div>
         <div class="form-group">
           <label>Protein / 100g (g) *</label>
-          <input type="number" name="protein" required min="0" max="100" step="0.1" placeholder="0">
+          <input type="number" name="protein" required min="0" max="100" step="0.1" placeholder="0" value="${escAttr(protein)}">
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label>UH (Carbs) / 100g (g) *</label>
-          <input type="number" name="carbs" required min="0" max="100" step="0.1" placeholder="0">
+          <input type="number" name="carbs" required min="0" max="100" step="0.1" placeholder="0" value="${escAttr(carbs)}">
         </div>
         <div class="form-group">
           <label>Fat / 100g (g) *</label>
-          <input type="number" name="fat" required min="0" max="100" step="0.1" placeholder="0">
+          <input type="number" name="fat" required min="0" max="100" step="0.1" placeholder="0" value="${escAttr(fat)}">
         </div>
       </div>
 
       <div class="form-group">
         <label>Default Unit</label>
         <select name="unit">
-          <option value="g">g</option>
-          <option value="kg">kg</option>
-          <option value="ml">ml</option>
-          <option value="L">L</option>
-          <option value="piece">piece</option>
-          <option value="slice">slice</option>
-          <option value="tbsp">tbsp</option>
-          <option value="tsp">tsp</option>
+          ${unitOptions}
         </select>
       </div>
 
       <div id="form-error" class="form-error" style="display:none"></div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Save Ingredient</button>
+        <button type="submit" class="btn btn-primary">${isEdit ? 'Save Changes' : 'Save Ingredient'}</button>
         <button type="button" class="btn btn-ghost" id="cancel-btn">Cancel</button>
       </div>
     </form>
@@ -207,15 +235,32 @@ function bindEvents(container) {
   // Close modal
   bindModalEvents(container);
 
-  // Delete custom food
+  // Delete (custom) or remove-from-list (claude built-in)
   container.addEventListener('click', (e) => {
     const delBtn = e.target.closest('.del-food-btn');
     if (!delBtn) return;
     const id = delBtn.dataset.id;
-    if (confirm('Delete this ingredient?')) {
-      removeCustomFood(id);
-      refreshTable(container);
+    if (isCustomFoodId(id)) {
+      if (confirm('Delete this ingredient?')) {
+        removeCustomFood(id);
+        refreshTable(container);
+      }
+    } else {
+      if (confirm('Hide this ingredient from the list? It can only come back if the app data is reset.')) {
+        tombstoneFood(id);
+        refreshTable(container);
+      }
     }
+  });
+
+  // Edit custom food OR override a claude-sourced built-in
+  container.addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.edit-food-btn');
+    if (!editBtn) return;
+    const id = editBtn.dataset.id;
+    const food = getAllFoods().find(f => f.id === id);
+    if (!food) return;
+    openEditModal(container, food);
   });
 
   // Open link-products modal
@@ -230,6 +275,7 @@ function bindEvents(container) {
 }
 
 function openModal(container) {
+  editingFoodId = null;
   const overlay = container.querySelector('#modal-overlay');
   const box = container.querySelector('#modal-box');
   box.innerHTML = renderAddForm();
@@ -238,7 +284,18 @@ function openModal(container) {
   box.querySelector('input[name="name"]')?.focus();
 }
 
+function openEditModal(container, food) {
+  editingFoodId = food.id;
+  const overlay = container.querySelector('#modal-overlay');
+  const box = container.querySelector('#modal-box');
+  box.innerHTML = renderAddForm(food);
+  overlay.style.display = 'flex';
+  bindModalEvents(container);
+  box.querySelector('input[name="name"]')?.focus();
+}
+
 function closeModal(container) {
+  editingFoodId = null;
   container.querySelector('#modal-overlay').style.display = 'none';
 }
 
@@ -280,17 +337,28 @@ function bindModalEvents(container) {
     }
 
     const unit = data.get('unit') || 'g';
-    const newFood = {
-      id: 'custom-' + crypto.randomUUID(),
-      name,
-      aliases: [],
-      category: data.get('category') || 'Custom',
-      nutritionPer100g: { kcal, protein, carbs, fat },
-      availableUnits: [unit],
-      isCustom: true,
-    };
+    const category = data.get('category') || 'Custom';
+    const nutritionPer100g = { kcal, protein, carbs, fat };
 
-    addCustomFood(newFood);
+    if (editingFoodId) {
+      const patch = { name, category, nutritionPer100g, availableUnits: [unit] };
+      if (isCustomFoodId(editingFoodId)) {
+        updateCustomFood(editingFoodId, patch);
+      } else {
+        // Editing a built-in (claude-sourced) food — save as an override.
+        setFoodOverride(editingFoodId, patch);
+      }
+    } else {
+      addCustomFood({
+        id: 'custom-' + crypto.randomUUID(),
+        name,
+        aliases: [],
+        category,
+        nutritionPer100g,
+        availableUnits: [unit],
+        isCustom: true,
+      });
+    }
     closeModal(container);
     refreshTable(container);
   });
@@ -311,4 +379,9 @@ function slugify(str) {
 
 function escHtml(str) {
   return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(val) {
+  if (val == null || val === '') return '';
+  return String(val).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }

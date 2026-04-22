@@ -318,6 +318,14 @@ export function addCustomFood(food) {
   customFoodsStore.set({ foods: [...current, food] });
 }
 
+export function updateCustomFood(id, patch) {
+  if (!id || !patch) return;
+  const current = customFoodsStore.get().foods;
+  customFoodsStore.set({
+    foods: current.map(f => f.id === id ? { ...f, ...patch, id } : f),
+  });
+}
+
 export function removeCustomFood(id) {
   const current = customFoodsStore.get().foods;
   customFoodsStore.set({ foods: current.filter(f => f.id !== id) });
@@ -454,6 +462,75 @@ export function countGroceryChoicesByChain(foodId) {
     if (Array.isArray(arr) && arr.length) out[chain] = arr.length;
   }
   return out;
+}
+
+// ── Food Overrides Store ───────────────────────────────────────────────────
+// Lets the user edit or hide built-in foods from the static foodDatabase.
+// Shape: { overrides: { [foodId]: partialFood }, tombstones: [foodId, ...] }
+// `overrides[id]` is merged on top of the base entry (user edits).
+// `tombstones` hides entries from the Ingredients list.
+
+export const foodOverridesStore = createStore(`mp-${ACTIVE_ID}-food-overrides`, { overrides: {}, tombstones: [] });
+
+export function getFoodOverride(foodId) {
+  return foodOverridesStore.get().overrides?.[foodId] || null;
+}
+
+export function setFoodOverride(foodId, patch) {
+  if (!foodId || !patch) return;
+  foodOverridesStore.set(prev => {
+    const overrides = { ...(prev.overrides || {}) };
+    overrides[foodId] = { ...(overrides[foodId] || {}), ...patch };
+    return { overrides, tombstones: prev.tombstones || [] };
+  });
+}
+
+export function tombstoneFood(foodId) {
+  if (!foodId) return;
+  foodOverridesStore.set(prev => {
+    const tombstones = Array.from(new Set([...(prev.tombstones || []), foodId]));
+    return { overrides: prev.overrides || {}, tombstones };
+  });
+  // Orphan cleanup — drop any saved product links for this foodId.
+  const links = productLinksStore.get().links;
+  if (links && Object.prototype.hasOwnProperty.call(links, foodId)) {
+    const { [foodId]: _drop, ...rest } = links;
+    productLinksStore.set({ links: rest });
+  }
+}
+
+export function isFoodTombstoned(foodId) {
+  return (foodOverridesStore.get().tombstones || []).includes(foodId);
+}
+
+// ── Meal Overrides Store ───────────────────────────────────────────────────
+// Same pattern as foodOverrides but for the static mealsDatabase (recipes).
+
+export const mealOverridesStore = createStore(`mp-${ACTIVE_ID}-meal-overrides`, { overrides: {}, tombstones: [] });
+
+export function getMealOverride(mealId) {
+  return mealOverridesStore.get().overrides?.[mealId] || null;
+}
+
+export function setMealOverride(mealId, patch) {
+  if (!mealId || !patch) return;
+  mealOverridesStore.set(prev => {
+    const overrides = { ...(prev.overrides || {}) };
+    overrides[mealId] = { ...(overrides[mealId] || {}), ...patch };
+    return { overrides, tombstones: prev.tombstones || [] };
+  });
+}
+
+export function tombstoneMeal(mealId) {
+  if (!mealId) return;
+  mealOverridesStore.set(prev => {
+    const tombstones = Array.from(new Set([...(prev.tombstones || []), mealId]));
+    return { overrides: prev.overrides || {}, tombstones };
+  });
+}
+
+export function isMealTombstoned(mealId) {
+  return (mealOverridesStore.get().tombstones || []).includes(mealId);
 }
 
 // ── Preferences Store ──────────────────────────────────────────────────────

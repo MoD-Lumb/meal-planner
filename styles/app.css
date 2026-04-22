@@ -1270,6 +1270,23 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 }
 .del-food-btn:hover { background: #fef2f2; color: var(--red-500); }
 
+.edit-food-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 12px;
+  color: var(--gray-500, #6b7280);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  margin-right: 2px;
+  transition: background 0.1s, color 0.1s;
+}
+.edit-food-btn:hover { background: var(--gray-100, #f3f4f6); color: var(--gray-800, #1f2937); }
+
 /* Category badges */
 .cat-badge {
   display: inline-block;
