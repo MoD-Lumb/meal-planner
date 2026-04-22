@@ -12,6 +12,8 @@ import {
   hasGroceryChoices,
   toggleGroceryChoice,
   clearGroceryChoices,
+  getGroceryChecks,
+  setGroceryCheck,
 } from '../store.js';
 import { loadIndex, getProductsByIds, LocalPricesError } from '../api/localPrices.js';
 
@@ -26,6 +28,7 @@ export function renderGroceries(container) {
 function buildPage(container) {
   const menu = menuStore.get();
   const items = aggregateGroceries(menu);
+  const checks = getGroceryChecks();
 
   container.innerHTML = `
     <div class="page-header">
@@ -45,7 +48,7 @@ function buildPage(container) {
       <p class="page-subtitle">${items.length} item${items.length !== 1 ? 's' : ''} needed for your week.</p>
 
       <div class="grocery-list" id="grocery-list">
-        ${items.map((item, i) => renderGroceryItem(item, i)).join('')}
+        ${items.map((item, i) => renderGroceryItem(item, i, checks)).join('')}
       </div>
     `}
   `;
@@ -53,7 +56,18 @@ function buildPage(container) {
   bindEvents(container, items);
 }
 
-function renderGroceryItem(item, index) {
+// Stable per-aggregated-row identity — mirrors the aggregator's grouping key
+// so persisted check state survives re-renders and menu edits.
+function itemKey(item) {
+  if (item.mealId) return `meal::${item.mealId}`;
+  return `item::${item.foodId || (item.name || '').toLowerCase().trim()}`;
+}
+
+function subKey(mealId, ingIdx) {
+  return `sub::${mealId}::${ingIdx}`;
+}
+
+function renderGroceryItem(item, index, checks) {
   const unitStrings = Object.entries(item.totalsByUnit)
     .map(([unit, qty]) => formatQtyUnit(qty, unit))
     .join(' + ');
@@ -63,11 +77,13 @@ function renderGroceryItem(item, index) {
   const portions = item.totalsByUnit['portion'] || 1;
 
   const canPick = !isMeal && !!item.foodId && hasAnyLinks(item.foodId);
+  const rowKey = itemKey(item);
+  const rowChecked = checks.has(rowKey);
 
   return `
-    <div class="grocery-item ${isMeal ? 'grocery-item--meal' : ''}" data-index="${index}">
+    <div class="grocery-item ${isMeal ? 'grocery-item--meal' : ''} ${rowChecked ? 'checked' : ''}" data-index="${index}" data-key="${escHtml(rowKey)}">
       <div class="grocery-label">
-        <input type="checkbox" class="grocery-check" data-index="${index}">
+        <input type="checkbox" class="grocery-check" data-index="${index}" ${rowChecked ? 'checked' : ''}>
         <span class="grocery-name">
           ${isMeal ? `<span class="grocery-meal-icon">${meal?.imageEmoji || '🍽️'}</span>` : ''}
           ${escHtml(item.name)}
@@ -91,10 +107,12 @@ function renderGroceryItem(item, index) {
               const food = findFoodById(pi.foodId) || customFoodsStore.get().foods.find(f => f.id === pi.foodId);
               const name = food ? food.name : pi.foodId;
               const scaledQty = Math.round(pi.quantity * portions * 10) / 10;
+              const sKey = subKey(item.mealId, piIdx);
+              const sChecked = checks.has(sKey);
               return `
-                <li class="grocery-ing-item">
+                <li class="grocery-ing-item ${sChecked ? 'checked' : ''}">
                   <label class="grocery-ing-label">
-                    <input type="checkbox" class="grocery-ing-check">
+                    <input type="checkbox" class="grocery-ing-check" data-key="${escHtml(sKey)}" ${sChecked ? 'checked' : ''}>
                     <span class="grocery-ing-qty">${scaledQty} ${pi.unit}</span>
                     <span class="grocery-ing-name">${escHtml(name)}</span>
                   </label>
@@ -136,14 +154,20 @@ function renderPickButton(foodId, index) {
 }
 
 function bindEvents(container, items) {
-  // Checkboxes (visual only, not persisted)
+  // Checkboxes (persisted per-week so state survives navigation)
   container.addEventListener('change', (e) => {
     if (e.target.classList.contains('grocery-check')) {
       const groceryItem = e.target.closest('.grocery-item');
-      if (groceryItem) groceryItem.classList.toggle('checked', e.target.checked);
+      if (groceryItem) {
+        groceryItem.classList.toggle('checked', e.target.checked);
+        const key = groceryItem.dataset.key;
+        if (key) setGroceryCheck(key, e.target.checked);
+      }
     } else if (e.target.classList.contains('grocery-ing-check')) {
       const ingItem = e.target.closest('.grocery-ing-item');
       if (ingItem) ingItem.classList.toggle('checked', e.target.checked);
+      const key = e.target.dataset.key;
+      if (key) setGroceryCheck(key, e.target.checked);
     }
   });
 
@@ -353,7 +377,7 @@ function refreshRow(container, items, index) {
   if (!item) return;
   const row = container.querySelector(`.grocery-item[data-index="${index}"]`);
   if (!row) return;
-  row.outerHTML = renderGroceryItem(item, index);
+  row.outerHTML = renderGroceryItem(item, index, getGroceryChecks());
 }
 
 function escHtml(str) {

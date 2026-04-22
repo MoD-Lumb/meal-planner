@@ -464,6 +464,31 @@ export function countGroceryChoicesByChain(foodId) {
   return out;
 }
 
+// ── Grocery Checks Store ───────────────────────────────────────────────────
+// Remembers which rows (and meal sub-ingredients) are ticked on the Groceries
+// page across navigation. Resets every ISO week — picking what you've bought
+// is inherently a this-week activity.
+// Shape: { weekKey: "YYYY-Www", keys: [stableKey, ...] }
+
+export const groceryChecksStore = createStore(`mp-${ACTIVE_ID}-grocery-checks`, { weekKey: '', keys: [] });
+
+export function getGroceryChecks() {
+  const { weekKey, keys } = groceryChecksStore.get();
+  if (weekKey !== currentWeekKey()) return new Set();
+  return new Set(Array.isArray(keys) ? keys : []);
+}
+
+export function setGroceryCheck(key, checked) {
+  if (!key) return;
+  const wk = currentWeekKey();
+  groceryChecksStore.set(prev => {
+    const base = prev.weekKey === wk ? (prev.keys || []) : [];
+    const set = new Set(base);
+    if (checked) set.add(key); else set.delete(key);
+    return { weekKey: wk, keys: Array.from(set) };
+  });
+}
+
 // ── Food Overrides Store ───────────────────────────────────────────────────
 // Lets the user edit or hide built-in foods from the static foodDatabase.
 // Shape: { overrides: { [foodId]: partialFood }, tombstones: [foodId, ...] }

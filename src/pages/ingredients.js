@@ -121,10 +121,8 @@ function renderTable(foods) {
               <button class="btn btn-ghost btn-sm link-products-btn" data-id="${food.id}" title="Link supermarket products">
                 ${(() => { const n = countLinks(food.id); return n ? `Linked <span class="linked-badge">${n}</span>` : 'Link products'; })()}
               </button>
-              ${(food.isCustom || food.source === 'claude') ? `
-                <button class="edit-food-btn" data-id="${food.id}" title="Edit">✎</button>
-                <button class="del-food-btn" data-id="${food.id}" title="${food.isCustom ? 'Delete' : 'Remove from list'}">✕</button>
-              ` : ''}
+              <button class="edit-food-btn" data-id="${food.id}" title="Edit">✎</button>
+              <button class="del-food-btn" data-id="${food.id}" title="${food.isCustom ? 'Delete' : 'Remove from list'}">✕</button>
             </td>
           </tr>
         `).join('')}
