@@ -38,17 +38,7 @@ export function loadChain(code) {
         if (!r.ok) throw new LocalPricesError(`Chain '${code}' not found (HTTP ${r.status}).`);
         return r.json();
       })
-      .then(raw => {
-        // Convert row-array format into objects once, at parse time.
-        const fields = raw.fields;
-        const products = raw.products.map(row => {
-          const o = {};
-          for (let i = 0; i < fields.length; i++) o[fields[i]] = row[i];
-          o._searchKey = normalize(o.name);
-          return o;
-        });
-        return { ...raw, products };
-      })
+      .then(materializeChain)
       .catch(e => {
         _chainCache.delete(code);
         throw e instanceof LocalPricesError ? e : new LocalPricesError(`Network error loading ${code}: ${e.message}`);
@@ -56,6 +46,29 @@ export function loadChain(code) {
     _chainCache.set(code, p);
   }
   return _chainCache.get(code);
+}
+
+function materializeChain(raw) {
+  // Convert row-array format into objects once, at parse time.
+  const fields = raw.fields;
+  const products = raw.products.map(row => {
+    const o = {};
+    for (let i = 0; i < fields.length; i++) o[fields[i]] = row[i];
+    o._searchKey = normalize(o.name);
+    return o;
+  });
+  return { ...raw, products };
+}
+
+// Replace in-memory caches with a freshly built catalog (e.g. from the
+// Developer tab after downloading today's archive). Session-only — a reload
+// falls back to the committed JSON under /data/prices/.
+export function injectCatalog(index, rawChainsByCode) {
+  _indexPromise = Promise.resolve(index);
+  _chainCache.clear();
+  for (const [code, raw] of rawChainsByCode) {
+    _chainCache.set(code, Promise.resolve(materializeChain(raw)));
+  }
 }
 
 // Strip diacritics + lowercase for Croatian-friendly substring matching.

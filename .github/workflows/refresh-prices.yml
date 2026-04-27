@@ -1,0 +1,55 @@
+name: Refresh prices
+
+on:
+  schedule:
+    # Daily at 04:00 UTC (~06:00 Zagreb time, after overnight upstream updates).
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-prices
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+
+      - name: Install deps
+        run: pip install -r pipeline/requirements.txt
+
+      - name: Download today's archive
+        run: python pipeline/downloader.py
+
+      - name: Rebuild price catalog
+        run: python pipeline/build_prices_index.py
+
+      - name: Upload to Drive
+        env:
+          DRIVE_SA_JSON: ${{ secrets.DRIVE_SA_JSON }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
+        run: python pipeline/upload_to_drive.py
+
+      - name: Commit updated catalog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/prices
+          if git diff --cached --quiet; then
+            echo "No catalog changes — skipping commit."
+          else
+            DATE=$(python -c 'import json;print(json.load(open("data/prices/index.json"))["date"])')
+            git commit -m "data: refresh prices ${DATE}"
+            git push
+          fi

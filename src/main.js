@@ -5,6 +5,7 @@ import { renderMealsDatabase } from './pages/mealsDatabase.js';
 import { renderGroceries } from './pages/groceries.js';
 import { renderIngredients } from './pages/ingredients.js';
 import { renderPrices } from './pages/prices.js';
+import { renderDeveloper } from './pages/developer.js';
 import { initDriveSync, signIn, signOut, isSignedIn, getStatus, subscribeStatus, forceSync } from './googleDriveSync.js';
 
 // ── Route map ──────────────────────────────────────────────────────────────
@@ -16,6 +17,7 @@ const ROUTES = {
   '#/ingredients': { render: renderIngredients,    label: 'Ingredients',      icon: '🥕' },
   '#/groceries':   { render: renderGroceries,      label: 'Groceries',        icon: '🛒' },
   '#/prices':      { render: renderPrices,          label: 'Prices',           icon: '💰' },
+  '#/developer':   { render: renderDeveloper,       label: 'Developer',        icon: '⚙️' },
 };
 
 const DEFAULT_ROUTE = '#/weekly';

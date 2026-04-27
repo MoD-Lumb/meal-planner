@@ -1,0 +1,4 @@
+# Python pipeline outputs (regenerated on every run, never committed)
+pipeline/archives/
+pipeline/__pycache__/
+pipeline/*.pyc
