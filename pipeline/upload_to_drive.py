@@ -68,6 +68,10 @@ def main() -> int:
     print(f"[debug] SA client_email: {creds_info.get('client_email')}")
     print(f"[debug] SA project_id : {creds_info.get('project_id')}")
     print(f"[debug] target folder : {folder_id}")
+    if folder_id:
+        prefix = folder_id[:6]
+        suffix = folder_id[-4:]
+        print(f"[debug] folder id len={len(folder_id)} prefix={prefix!r} suffix={suffix!r}")
 
     creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
     service = build("drive", "v3", credentials=creds, cache_discovery=False)
