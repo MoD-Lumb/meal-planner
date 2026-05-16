@@ -76,6 +76,25 @@ def main() -> int:
     creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
     service = build("drive", "v3", credentials=creds, cache_discovery=False)
 
+    try:
+        meta = service.files().get(
+            fileId=folder_id,
+            fields="id,name,mimeType,driveId,parents,owners(emailAddress),capabilities(canEdit,canAddChildren)",
+            supportsAllDrives=True,
+        ).execute()
+        print(f"[debug] folder.get OK: name={meta.get('name')!r} mimeType={meta.get('mimeType')} "
+              f"driveId={meta.get('driveId')} parents={meta.get('parents')} "
+              f"owners={[o.get('emailAddress') for o in meta.get('owners', [])]} "
+              f"capabilities={meta.get('capabilities')}")
+    except HttpError as e:
+        status = getattr(e.resp, "status", "?")
+        body = getattr(e, "content", b"")
+        try:
+            body_str = body.decode("utf-8") if isinstance(body, (bytes, bytearray)) else str(body)
+        except Exception:
+            body_str = repr(body)
+        print(f"[debug] folder.get FAILED status={status} body={body_str}", file=sys.stderr)
+
     file_ids = _list_folder_files(service, folder_id)
     print(f"[info] folder {folder_id}: {len(file_ids)} existing files")
 
@@ -106,6 +125,12 @@ def main() -> int:
                 print(f"  [created] {name:<30} {size:>9}  id={fid}")
         except HttpError as e:
             status = getattr(e.resp, "status", "?")
+            body = getattr(e, "content", b"")
+            try:
+                body_str = body.decode("utf-8") if isinstance(body, (bytes, bytearray)) else str(body)
+            except Exception:
+                body_str = repr(body)
+            print(f"[debug] upload error body: {body_str}", file=sys.stderr)
             if str(status) in ("401", "403"):
                 print(
                     f"[error] Drive rejected upload ({status}). "
