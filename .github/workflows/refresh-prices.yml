@@ -23,23 +23,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: pip
-          cache-dependency-path: pipeline/requirements.txt
-
-      - name: Install deps
-        run: pip install -r pipeline/requirements.txt
 
       - name: Download today's archive
         run: python pipeline/downloader.py
 
       - name: Rebuild price catalog
         run: python pipeline/build_prices_index.py
-
-      - name: Upload to Drive
-        env:
-          DRIVE_SA_JSON: ${{ secrets.DRIVE_SA_JSON }}
-          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
-        run: python pipeline/upload_to_drive.py
 
       - name: Commit updated catalog
         run: |

@@ -1,27 +1,24 @@
 // Developer tools — trigger the GitHub Actions workflow that refreshes today's
-// price catalog into Google Drive, and/or hot-load the latest Drive catalog
-// into the running app. Session-only injection: a page reload falls back to
-// the committed JSON under data/prices/.
+// price catalog and commits it to data/prices/, then hot-reload that catalog
+// from GitHub Pages into the running app.
 
 import { injectCatalog } from '../api/localPrices.js';
 import {
-  DRIVE_CATALOG_FOLDER_ID,
-  GOOGLE_API_KEY,
   GITHUB_REPO,
   GITHUB_WORKFLOW_FILE,
   GITHUB_BRANCH,
 } from '../config.js';
 
-const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 const GITHUB_API = 'https://api.github.com';
 const DOWNLOAD_CONCURRENCY = 4;
 const PAT_KEY = 'mp-github-pat';
+const PRICES_BASE_URL = new URL('./data/prices/', document.baseURI).href;
 
 export function renderDeveloper(container) {
   container.innerHTML = `
     <div class="page-header">
       <h1>Developer</h1>
-      <p class="page-subtitle">Trigger a price refresh in GitHub Actions and hot-load the result from Drive.</p>
+      <p class="page-subtitle">Trigger a price refresh in GitHub Actions and hot-load the new catalog.</p>
     </div>
 
     <div class="profile-card">
@@ -45,14 +42,13 @@ export function renderDeveloper(container) {
       <h3 style="margin-top:0;">Refresh today's prices</h3>
       <p>
         Triggers the GitHub Action that downloads today's archive, rebuilds
-        the 18 chain JSONs, and uploads them to your Drive folder. When the
-        run finishes, the catalog is hot-loaded into this page.
-        Reloading the page falls back to the committed JSON in
-        <code>data/prices/</code>.
+        the chain JSONs, and commits them to <code>data/prices/</code>. After
+        the run finishes and GitHub Pages rebuilds (~1–2 min), the new catalog
+        is hot-loaded into this page.
       </p>
       <div class="form-actions" style="display:flex; gap:8px; flex-wrap:wrap;">
         <button class="btn btn-primary" id="dev-run-btn">Run refresh now</button>
-        <button class="btn btn-secondary" id="dev-refresh-btn">Refresh from Drive (skip GitHub run)</button>
+        <button class="btn btn-secondary" id="dev-refresh-btn">Reload catalog (skip GitHub run)</button>
       </div>
       <div id="dev-status" class="nt-hint" style="margin-top:12px; white-space:pre-line;"></div>
       <pre id="dev-log" style="margin-top:12px; max-height:360px; overflow:auto; background:#0b1020; color:#d6e0ff; padding:10px 12px; border-radius:8px; font-size:12px; line-height:1.4; display:none;"></pre>
@@ -97,10 +93,6 @@ export function renderDeveloper(container) {
   const onStatus = (msg) => { status.textContent = msg; append(msg); };
 
   runBtn.addEventListener('click', async () => {
-    if (!isDriveConfigured()) {
-      status.textContent = '✗ Set DRIVE_CATALOG_FOLDER_ID and GOOGLE_API_KEY in src/config.js first.';
-      return;
-    }
     let pat = getPat();
     if (!pat) {
       pat = (prompt('Paste a GitHub fine-grained PAT (Actions: R/W on this repo):') || '').trim();
@@ -113,8 +105,8 @@ export function renderDeveloper(container) {
     log.textContent = '';
     try {
       await dispatchAndWait(pat, onStatus);
-      onStatus('Run succeeded. Loading fresh catalog from Drive…');
-      const result = await refreshFromDrive({ onStatus });
+      onStatus('Run succeeded. Waiting for GitHub Pages to rebuild…');
+      const result = await waitForFreshCatalog({ onStatus });
       status.textContent = `✓ Refreshed: ${result.chainCount} chains, ${result.productCount} products (${result.date}).`;
     } catch (err) {
       console.error(err);
@@ -127,15 +119,11 @@ export function renderDeveloper(container) {
   });
 
   refreshBtn.addEventListener('click', async () => {
-    if (!isDriveConfigured()) {
-      status.textContent = '✗ Set DRIVE_CATALOG_FOLDER_ID and GOOGLE_API_KEY in src/config.js first.';
-      return;
-    }
     runBtn.disabled = true;
     refreshBtn.disabled = true;
     log.textContent = '';
     try {
-      const result = await refreshFromDrive({ onStatus });
+      const result = await refreshFromPages({ onStatus });
       status.textContent = `✓ Loaded ${result.chainCount} chains, ${result.productCount} products (${result.date}).`;
     } catch (err) {
       console.error(err);
@@ -154,13 +142,6 @@ function getPat() { return localStorage.getItem(PAT_KEY) || ''; }
 function setPat(v) {
   if (v) localStorage.setItem(PAT_KEY, v);
   else   localStorage.removeItem(PAT_KEY);
-}
-
-function isDriveConfigured() {
-  return DRIVE_CATALOG_FOLDER_ID
-      && GOOGLE_API_KEY
-      && !DRIVE_CATALOG_FOLDER_ID.startsWith('PASTE')
-      && !GOOGLE_API_KEY.startsWith('PASTE');
 }
 
 // ── GitHub workflow dispatch ──────────────────────────────────────────────
@@ -227,67 +208,57 @@ function ghHeaders(pat) {
   };
 }
 
-// ── Drive fetch (unchanged shape from the previous iteration) ─────────────
+// ── GitHub Pages fetch ────────────────────────────────────────────────────
 
-async function refreshFromDrive({ onStatus }) {
-  onStatus('Listing Drive folder…');
-  const files = await listFolderJsons(DRIVE_CATALOG_FOLDER_ID);
-  if (files.length === 0) {
-    throw new Error('Drive folder is empty — run the workflow first.');
+// After a successful workflow run, GitHub Pages takes ~1–2 min to rebuild
+// before the new index.json is served. Poll the index's `generatedAt` until
+// it changes from whatever it was when we started.
+async function waitForFreshCatalog({ onStatus }) {
+  const before = await fetchIndex().catch(() => null);
+  const baseline = before?.generatedAt || null;
+
+  for (let i = 0; i < 24; i++) { // ~4 min worst case
+    await sleep(10000);
+    onStatus(`  Polling Pages for fresh index.json (${i + 1}/24)…`);
+    const idx = await fetchIndex().catch(() => null);
+    if (idx && idx.generatedAt && idx.generatedAt !== baseline) {
+      return await refreshFromPages({ onStatus });
+    }
   }
+  throw new Error('GitHub Pages did not serve a new index.json within 4 min.');
+}
 
-  const indexEntry = files.find(f => f.name === 'index.json');
-  if (!indexEntry) throw new Error("index.json not found in Drive folder.");
-  const chainEntries = files.filter(f => f !== indexEntry);
+async function refreshFromPages({ onStatus }) {
+  onStatus('Fetching index.json from GitHub Pages…');
+  const index = await fetchIndex();
 
-  onStatus(`Downloading index.json (${humanSize(Number(indexEntry.size) || 0)})…`);
-  const index = await fetchDriveJson(indexEntry.id);
-
+  const chainEntries = index.chains || [];
   onStatus(`Downloading ${chainEntries.length} chain files…`);
   const rawChainsByCode = new Map();
   let done = 0;
   await pLimit(DOWNLOAD_CONCURRENCY, chainEntries.map(entry => async () => {
-    const raw = await fetchDriveJson(entry.id);
+    const raw = await fetchPagesJson(entry.file);
     rawChainsByCode.set(raw.chain, raw);
     done++;
     onStatus(`  [${done}/${chainEntries.length}] ${raw.chain}: ${raw.products.length} products, ${raw.storeCount} stores`);
   }));
 
-  for (const c of (index.chains || [])) {
-    if (!rawChainsByCode.has(c.code)) {
-      onStatus(`  (warning) index references chain '${c.code}' but its file was not downloaded`);
-    }
-  }
-
   injectCatalog(index, rawChainsByCode);
 
   const productCount = Array.from(rawChainsByCode.values())
     .reduce((s, raw) => s + (raw.products?.length || 0), 0);
-  const latestMtime = files.reduce((acc, f) =>
-    (f.modifiedTime && (!acc || f.modifiedTime > acc)) ? f.modifiedTime : acc, null);
-  onStatus(`Drive modifiedTime: ${latestMtime || '?'}`);
+  onStatus(`Catalog date: ${index.date} (generated ${index.generatedAt || '?'})`);
   return { chainCount: rawChainsByCode.size, productCount, date: index.date };
 }
 
-async function listFolderJsons(folderId) {
-  const q = `'${folderId}' in parents and trashed=false and mimeType='application/json'`;
-  const url = `${DRIVE_API}/files?q=${encodeURIComponent(q)}`
-    + `&fields=${encodeURIComponent('files(id,name,size,modifiedTime)')}`
-    + `&pageSize=1000&key=${encodeURIComponent(GOOGLE_API_KEY)}`;
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    const body = await resp.text().catch(() => resp.statusText);
-    throw new Error(`Drive list HTTP ${resp.status}: ${body}`);
-  }
-  const payload = await resp.json();
-  return payload.files || [];
+async function fetchIndex() {
+  return fetchPagesJson('index.json');
 }
 
-async function fetchDriveJson(fileId) {
-  const url = `${DRIVE_API}/files/${encodeURIComponent(fileId)}`
-    + `?alt=media&key=${encodeURIComponent(GOOGLE_API_KEY)}`;
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`Download ${fileId} HTTP ${resp.status}`);
+async function fetchPagesJson(name) {
+  const url = `${PRICES_BASE_URL}${encodeURIComponent(name)}?t=${Date.now()}`;
+  const resp = await fetch(url, { cache: 'no-store' });
+  if (!resp.ok) throw new Error(`Pages fetch ${name} HTTP ${resp.status}`);
   return resp.json();
 }
 
@@ -308,12 +279,3 @@ async function pLimit(limit, tasks) {
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-function humanSize(n) {
-  let v = n;
-  for (const u of ['B', 'KB', 'MB', 'GB']) {
-    if (v < 1024) return `${v.toFixed(1)} ${u}`;
-    v /= 1024;
-  }
-  return `${v.toFixed(1)} TB`;
-}
