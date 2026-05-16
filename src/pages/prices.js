@@ -133,7 +133,9 @@ async function runComparison(container, index, profile, items) {
         <table class="prices-table">
           <thead>
             <tr>
-              <th class="prices-include-col" title="Untick to exclude from totals">✓</th>
+              <th class="prices-include-col" title="Toggle all rows on/off">
+                <input type="checkbox" class="prices-include-cb prices-include-all" id="prices-include-all" checked aria-label="Select or deselect all items">
+              </th>
               <th class="prices-ingredient-col">Your ingredient</th>
               ${chains.map(c => `<th>${escHtml(chainMeta.get(c)?.displayName || c)}</th>`).join('')}
             </tr>
@@ -163,15 +165,43 @@ async function runComparison(container, index, profile, items) {
       </div>
     `;
 
+    const headerCb = content.querySelector('#prices-include-all');
+    const rowCbs   = content.querySelectorAll('.prices-include-cb:not(.prices-include-all)');
+
+    const refreshHeader = () => {
+      if (!headerCb) return;
+      const total = rowCbs.length;
+      const on = Array.from(rowCbs).filter(c => c.checked).length;
+      headerCb.checked = on === total;
+      headerCb.indeterminate = on > 0 && on < total;
+    };
+
+    const refreshSummary = () => {
+      const summary = content.querySelector('#prices-summary');
+      if (summary) summary.innerHTML = summaryHtml();
+    };
+
     content.addEventListener('change', (e) => {
       const cb = e.target.closest('.prices-include-cb');
       if (!cb) return;
-      const i = Number(cb.dataset.item);
-      if (cb.checked) included.add(i); else included.delete(i);
-      const row = cb.closest('tr');
-      if (row) row.classList.toggle('prices-row-excluded', !cb.checked);
-      const summary = content.querySelector('#prices-summary');
-      if (summary) summary.innerHTML = summaryHtml();
+      if (cb === headerCb) {
+        const checked = headerCb.checked;
+        rowCbs.forEach(rc => {
+          rc.checked = checked;
+          const i = Number(rc.dataset.item);
+          if (checked) included.add(i); else included.delete(i);
+          const row = rc.closest('tr');
+          if (row) row.classList.toggle('prices-row-excluded', !checked);
+        });
+        headerCb.indeterminate = false;
+      } else {
+        const i = Number(cb.dataset.item);
+        if (cb.checked) included.add(i); else included.delete(i);
+        const row = cb.closest('tr');
+        if (row) row.classList.toggle('prices-row-excluded', !cb.checked);
+        refreshHeader();
+      }
+      refreshSummary();
     });
   } catch (err) {
     content.innerHTML = `<div class="empty-state"><h3>Failed to compare</h3><p>${escHtml(err instanceof LocalPricesError ? err.message : String(err))}</p></div>`;
