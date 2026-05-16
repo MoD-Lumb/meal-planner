@@ -127,21 +127,24 @@ async function runComparison(container, index, profile, items) {
     content.innerHTML = `
       <div class="prices-summary" id="prices-summary">${summaryHtml()}</div>
 
-      <div class="profile-card">
+      <div class="profile-card prices-breakdown-card">
         <h3 style="margin-top:0">Breakdown per item</h3>
-        <div style="overflow-x:auto">
+        <div class="prices-table-wrap">
         <table class="prices-table">
           <thead>
             <tr>
-              <th>Your ingredient</th>
+              <th class="prices-include-col" title="Untick to exclude from totals">✓</th>
+              <th class="prices-ingredient-col">Your ingredient</th>
               ${chains.map(c => `<th>${escHtml(chainMeta.get(c)?.displayName || c)}</th>`).join('')}
-              <th class="prices-include-col" title="Untick to exclude from totals">Include</th>
             </tr>
           </thead>
           <tbody>
             ${items.map((it, i) => `
               <tr data-row="${i}">
-                <td>${escHtml(it.name)}</td>
+                <td class="prices-include-col">
+                  <input type="checkbox" class="prices-include-cb" data-item="${i}" checked aria-label="Include in totals">
+                </td>
+                <td class="prices-ingredient-col">${escHtml(it.name)}</td>
                 ${chains.map(c => {
                   const entry = matchesByChain[c][i];
                   const p = entry?.product;
@@ -149,11 +152,8 @@ async function runComparison(container, index, profile, items) {
                   const tag = sourceTag(entry.source);
                   const np = normalizedPrice(p);
                   const npStr = np ? `€${np.value.toFixed(2)}${np.label.slice(1)}` : '';
-                  return `<td title="${escHtml(p.name)}">€${Number(p.minPrice).toFixed(2)}${tag}<br><small class="nt-hint">${escHtml(truncate(p.name, 40))}${npStr ? ` · ${npStr}` : ''}</small></td>`;
+                  return `<td title="${escHtml(p.name)}${npStr ? ' · ' + npStr : ''}">€${Number(p.minPrice).toFixed(2)}${tag}<br><small class="nt-hint">${escHtml(truncate(p.name, 22))}</small></td>`;
                 }).join('')}
-                <td class="prices-include-col">
-                  <input type="checkbox" class="prices-include-cb" data-item="${i}" checked aria-label="Include in totals">
-                </td>
               </tr>
             `).join('')}
           </tbody>

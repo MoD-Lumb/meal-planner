@@ -2179,29 +2179,62 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
   margin-top: 4px;
 }
 
+/* Breakdown-per-item card breaks out of the standard 1400px content max-width
+   so the wide chain table fits on big screens. Falls back to horizontal
+   scroll on narrower viewports via .prices-table-wrap. */
+.prices-breakdown-card {
+  max-width: none;
+  width: 100%;
+}
+
+.prices-table-wrap {
+  overflow-x: auto;
+}
+
 .prices-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 12px;
+  table-layout: auto;
 }
 
 .prices-table th,
 .prices-table td {
-  padding: 8px 10px;
+  padding: 4px 6px;
   border-bottom: 1px solid var(--gray-200, #e5e7eb);
   text-align: left;
+  vertical-align: top;
 }
 
 .prices-table th {
   font-weight: 600;
   text-transform: capitalize;
   background: var(--gray-50, #f9fafb);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.prices-table td small.nt-hint {
+  font-size: 10px;
+  line-height: 1.2;
+  display: inline-block;
+  max-width: 110px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .prices-include-col {
   width: 1%;
   text-align: center !important;
   white-space: nowrap;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+.prices-ingredient-col {
+  white-space: nowrap;
+  font-weight: 500;
 }
 
 .prices-include-cb {
