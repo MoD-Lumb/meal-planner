@@ -65,6 +65,10 @@ def main() -> int:
         print(f"[error] DRIVE_SA_JSON is not valid JSON: {e}", file=sys.stderr)
         return 2
 
+    print(f"[debug] SA client_email: {creds_info.get('client_email')}")
+    print(f"[debug] SA project_id : {creds_info.get('project_id')}")
+    print(f"[debug] target folder : {folder_id}")
+
     creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
     service = build("drive", "v3", credentials=creds, cache_discovery=False)
 
