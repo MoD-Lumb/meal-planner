@@ -397,7 +397,16 @@ function refreshRow(container, items, index) {
 function computeUnitPrice(p) {
   const price = typeof p.minPrice === 'number' ? p.minPrice : null;
   if (price == null) return null;
-  const raw = String(p.quantity || '').trim();
+  const fromQty = unitPriceFromAmount(price, String(p.quantity || '').trim(), /*allowPieces*/ true);
+  if (fromQty) return fromQty;
+  // Fallback: many catalog rows store "1 KOM" with the real weight/volume only
+  // in the product name (e.g. "MARG. ZVIJE 250 g ZA KREME"). Scan the name for
+  // a mass/volume token. Piece-units are intentionally NOT extracted from the
+  // name to avoid false positives like "24x8 cm" or pack counts.
+  return unitPriceFromName(price, String(p.name || ''));
+}
+
+function unitPriceFromAmount(price, raw, allowPieces) {
   if (!raw) return null;
   const m = raw.match(/^([0-9]+(?:[.,][0-9]+)?)\s*([A-Za-zŠšĐđČčĆćŽž]+)/);
   if (!m) return null;
@@ -412,11 +421,41 @@ function computeUnitPrice(p) {
   if (u === 'CL')      return { value: price * 100 / qty,   label: 'L'  };
   if (u === 'DL')      return { value: price * 10 / qty,    label: 'L'  };
   if (u === 'M')       return { value: price / qty,         label: 'm'  };
-  if (u === 'KOM' || u === 'PAK' || u === 'SET') {
+  if (allowPieces && (u === 'KOM' || u === 'PAK' || u === 'SET')) {
     if (qty === 1) return null;
     return { value: price / qty, label: u === 'KOM' ? 'kom' : (u === 'PAK' ? 'pak' : 'set') };
   }
   return null;
+}
+
+function unitPriceFromName(price, name) {
+  if (!name) return null;
+  // Match a number + mass/volume unit as a standalone token. Examples that
+  // should match: "250 g", "1,5 L", "75ml", "500GR". Examples that must NOT:
+  // "24x8 cm" (cm rejected), "2U1" (no unit), "1240 G DOG" (matches → fine).
+  const re = /(?:^|[\s(])([0-9]+(?:[.,][0-9]+)?)\s?(kg|kilograma?|gr?|l|lit(?:re|ar|ara)?|ml|dl|cl)\b/gi;
+  let best = null;
+  let m;
+  while ((m = re.exec(name)) !== null) {
+    const qty = parseFloat(m[1].replace(',', '.'));
+    if (!isFinite(qty) || qty <= 0) continue;
+    const u = m[2].toLowerCase();
+    let perValue, perLabel;
+    if (u === 'kg' || u.startsWith('kilo'))            { perValue = price / qty;        perLabel = 'kg'; }
+    else if (u === 'g' || u === 'gr')                  { perValue = price * 1000 / qty; perLabel = 'kg'; }
+    else if (u === 'l' || u.startsWith('lit'))         { perValue = price / qty;        perLabel = 'L';  }
+    else if (u === 'ml')                               { perValue = price * 1000 / qty; perLabel = 'L';  }
+    else if (u === 'dl')                               { perValue = price * 10 / qty;   perLabel = 'L';  }
+    else if (u === 'cl')                               { perValue = price * 100 / qty;  perLabel = 'L';  }
+    else continue;
+    // Prefer the largest extracted amount — handles cases like
+    // "OSCAR 1240 g DOG" where there's only one token, and avoids picking
+    // a stray "2 g" if a real "500 g" appears later.
+    if (!best || qty > best._qty) best = { value: perValue, label: perLabel, _qty: qty };
+  }
+  if (!best) return null;
+  delete best._qty;
+  return best;
 }
 
 function formatUnitPrice(p) {
