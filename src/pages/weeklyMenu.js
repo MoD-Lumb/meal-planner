@@ -1,4 +1,4 @@
-import { menuStore, prefsStore, customFoodsStore, profileStore } from '../store.js';
+import { menuStore, prefsStore, customFoodsStore, profileStore, isFoodArchived, isMealArchived } from '../store.js';
 import { foodDatabase, FOOD_CATEGORIES, findFoodById, searchFoods } from '../data/foodDatabase.js';
 import { mealsDatabase } from '../data/mealsDatabase.js';
 import { calcIngredientNutrition, calcMealNutrition, findFood } from '../utils/nutritionCalc.js';
@@ -144,7 +144,7 @@ function renderMealSection(day, meal, mealEntry) {
         <div class="meal-header-actions">
           <select class="meal-db-select" data-day="${day}" data-meal="${meal}">
             <option value="">+ Load meal...</option>
-            ${mealsDatabase.map(m => `
+            ${mealsDatabase.filter(m => !isMealArchived(m.id)).map(m => `
               <option value="${m.id}">${m.imageEmoji || ''} ${m.name}</option>
             `).join('')}
           </select>
@@ -674,8 +674,8 @@ function handleNameInput(row, section, id, day, meal, value, categoryFilter = ''
   // With no text: show category browse if a category is selected, otherwise clear
   if (!trimmed) {
     if (categoryFilter) {
-      const catFoods = foodDatabase.filter(f => f.category === categoryFilter).slice(0, 14);
-      const customCatFoods = customFoodsStore.get().foods.filter(f => f.category === categoryFilter).slice(0, 4);
+      const catFoods = foodDatabase.filter(f => f.category === categoryFilter && !isFoodArchived(f.id)).slice(0, 14);
+      const customCatFoods = customFoodsStore.get().foods.filter(f => f.category === categoryFilter && !isFoodArchived(f.id)).slice(0, 4);
       const all = [...catFoods, ...customCatFoods];
       if (all.length > 0) {
         dd.innerHTML = all.map(food => `
@@ -705,17 +705,18 @@ function handleNameInput(row, section, id, day, meal, value, categoryFilter = ''
   } else {
     foodMatches = searchFoods(trimmed);
   }
+  foodMatches = foodMatches.filter(f => !isFoodArchived(f.id));
 
   const customMatches = customFoodsStore.get().foods.filter(f => {
     const q = trimmed.toLowerCase();
     const nameMatch = f.name.toLowerCase().includes(q) || (f.aliases || []).some(a => a.toLowerCase().includes(q));
     const catMatch = !categoryFilter || f.category === categoryFilter;
-    return nameMatch && catMatch;
+    return nameMatch && catMatch && !isFoodArchived(f.id);
   }).slice(0, 4);
 
   // Only show meals when no category filter
   const mealMatches = categoryFilter ? [] : mealsDatabase.filter(m =>
-    m.name.toLowerCase().includes(trimmed.toLowerCase())
+    m.name.toLowerCase().includes(trimmed.toLowerCase()) && !isMealArchived(m.id)
   ).slice(0, 4);
 
   const hasResults = foodMatches.length > 0 || customMatches.length > 0 || mealMatches.length > 0;

@@ -490,12 +490,23 @@ export function setGroceryCheck(key, checked) {
 }
 
 // ── Food Overrides Store ───────────────────────────────────────────────────
-// Lets the user edit or hide built-in foods from the static foodDatabase.
-// Shape: { overrides: { [foodId]: partialFood }, tombstones: [foodId, ...] }
+// Lets the user edit, hide, or archive foods (both built-in foodDatabase
+// entries and custom-added ones).
+// Shape: { overrides: { [foodId]: partialFood }, tombstones: [foodId, ...], archived: [foodId, ...] }
 // `overrides[id]` is merged on top of the base entry (user edits).
-// `tombstones` hides entries from the Ingredients list.
+// `tombstones` permanently hides entries (current "Remove from list" path).
+// `archived` keeps entries visible on Ingredients page but excludes them from
+// active selectors (weekly menu, recipe editor) and can be restored.
 
-export const foodOverridesStore = createStore(`mp-${ACTIVE_ID}-food-overrides`, { overrides: {}, tombstones: [] });
+export const foodOverridesStore = createStore(`mp-${ACTIVE_ID}-food-overrides`, { overrides: {}, tombstones: [], archived: [] });
+
+function _normalizeFoodOverrides(prev) {
+  return {
+    overrides: prev.overrides || {},
+    tombstones: prev.tombstones || [],
+    archived: prev.archived || [],
+  };
+}
 
 export function getFoodOverride(foodId) {
   return foodOverridesStore.get().overrides?.[foodId] || null;
@@ -504,17 +515,18 @@ export function getFoodOverride(foodId) {
 export function setFoodOverride(foodId, patch) {
   if (!foodId || !patch) return;
   foodOverridesStore.set(prev => {
-    const overrides = { ...(prev.overrides || {}) };
-    overrides[foodId] = { ...(overrides[foodId] || {}), ...patch };
-    return { overrides, tombstones: prev.tombstones || [] };
+    const base = _normalizeFoodOverrides(prev);
+    return { ...base, overrides: { ...base.overrides, [foodId]: { ...(base.overrides[foodId] || {}), ...patch } } };
   });
 }
 
 export function tombstoneFood(foodId) {
   if (!foodId) return;
   foodOverridesStore.set(prev => {
-    const tombstones = Array.from(new Set([...(prev.tombstones || []), foodId]));
-    return { overrides: prev.overrides || {}, tombstones };
+    const base = _normalizeFoodOverrides(prev);
+    const tombstones = Array.from(new Set([...base.tombstones, foodId]));
+    const archived = base.archived.filter(id => id !== foodId);
+    return { ...base, tombstones, archived };
   });
   // Orphan cleanup — drop any saved product links for this foodId.
   const links = productLinksStore.get().links;
@@ -528,10 +540,39 @@ export function isFoodTombstoned(foodId) {
   return (foodOverridesStore.get().tombstones || []).includes(foodId);
 }
 
+export function archiveFood(foodId) {
+  if (!foodId) return;
+  foodOverridesStore.set(prev => {
+    const base = _normalizeFoodOverrides(prev);
+    if (base.archived.includes(foodId)) return base;
+    return { ...base, archived: [...base.archived, foodId] };
+  });
+}
+
+export function unarchiveFood(foodId) {
+  if (!foodId) return;
+  foodOverridesStore.set(prev => {
+    const base = _normalizeFoodOverrides(prev);
+    return { ...base, archived: base.archived.filter(id => id !== foodId) };
+  });
+}
+
+export function isFoodArchived(foodId) {
+  return (foodOverridesStore.get().archived || []).includes(foodId);
+}
+
 // ── Meal Overrides Store ───────────────────────────────────────────────────
 // Same pattern as foodOverrides but for the static mealsDatabase (recipes).
 
-export const mealOverridesStore = createStore(`mp-${ACTIVE_ID}-meal-overrides`, { overrides: {}, tombstones: [] });
+export const mealOverridesStore = createStore(`mp-${ACTIVE_ID}-meal-overrides`, { overrides: {}, tombstones: [], archived: [] });
+
+function _normalizeMealOverrides(prev) {
+  return {
+    overrides: prev.overrides || {},
+    tombstones: prev.tombstones || [],
+    archived: prev.archived || [],
+  };
+}
 
 export function getMealOverride(mealId) {
   return mealOverridesStore.get().overrides?.[mealId] || null;
@@ -540,22 +581,44 @@ export function getMealOverride(mealId) {
 export function setMealOverride(mealId, patch) {
   if (!mealId || !patch) return;
   mealOverridesStore.set(prev => {
-    const overrides = { ...(prev.overrides || {}) };
-    overrides[mealId] = { ...(overrides[mealId] || {}), ...patch };
-    return { overrides, tombstones: prev.tombstones || [] };
+    const base = _normalizeMealOverrides(prev);
+    return { ...base, overrides: { ...base.overrides, [mealId]: { ...(base.overrides[mealId] || {}), ...patch } } };
   });
 }
 
 export function tombstoneMeal(mealId) {
   if (!mealId) return;
   mealOverridesStore.set(prev => {
-    const tombstones = Array.from(new Set([...(prev.tombstones || []), mealId]));
-    return { overrides: prev.overrides || {}, tombstones };
+    const base = _normalizeMealOverrides(prev);
+    const tombstones = Array.from(new Set([...base.tombstones, mealId]));
+    const archived = base.archived.filter(id => id !== mealId);
+    return { ...base, tombstones, archived };
   });
 }
 
 export function isMealTombstoned(mealId) {
   return (mealOverridesStore.get().tombstones || []).includes(mealId);
+}
+
+export function archiveMeal(mealId) {
+  if (!mealId) return;
+  mealOverridesStore.set(prev => {
+    const base = _normalizeMealOverrides(prev);
+    if (base.archived.includes(mealId)) return base;
+    return { ...base, archived: [...base.archived, mealId] };
+  });
+}
+
+export function unarchiveMeal(mealId) {
+  if (!mealId) return;
+  mealOverridesStore.set(prev => {
+    const base = _normalizeMealOverrides(prev);
+    return { ...base, archived: base.archived.filter(id => id !== mealId) };
+  });
+}
+
+export function isMealArchived(mealId) {
+  return (mealOverridesStore.get().archived || []).includes(mealId);
 }
 
 // ── Preferences Store ──────────────────────────────────────────────────────

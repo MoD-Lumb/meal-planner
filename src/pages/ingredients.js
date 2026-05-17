@@ -2,28 +2,35 @@ import { foodDatabase, FOOD_CATEGORIES } from '../data/foodDatabase.js';
 import {
   customFoodsStore, addCustomFood, updateCustomFood, removeCustomFood, countLinks,
   foodOverridesStore, setFoodOverride, tombstoneFood,
+  archiveFood, unarchiveFood,
 } from '../store.js';
 import { openLinkProductsModal } from './linkProductsModal.js';
 
 let currentCategory = 'All';
 let currentSearch = '';
 let editingFoodId = null;
+let archivedFilter = 'active'; // 'active' | 'archived' | 'all'
 
 export function renderIngredients(container) {
   currentCategory = 'All';
   currentSearch = '';
+  archivedFilter = 'active';
   buildPage(container);
 }
 
 function getAllFoods() {
-  const { overrides, tombstones } = foodOverridesStore.get();
+  const { overrides, tombstones, archived } = foodOverridesStore.get();
   const tombSet = new Set(tombstones || []);
+  const archSet = new Set(archived || []);
   const builtIn = foodDatabase
     .filter(f => !tombSet.has(f.id))
-    .map(f => overrides?.[f.id] ? { ...f, ...overrides[f.id] } : f);
+    .map(f => ({
+      ...(overrides?.[f.id] ? { ...f, ...overrides[f.id] } : f),
+      isArchived: archSet.has(f.id),
+    }));
   const custom = customFoodsStore.get().foods
     .filter(f => !tombSet.has(f.id))
-    .map(f => ({ ...f, isCustom: true }));
+    .map(f => ({ ...f, isCustom: true, isArchived: archSet.has(f.id) }));
   return [...builtIn, ...custom];
 }
 
@@ -33,6 +40,11 @@ function isCustomFoodId(id) {
 
 function filteredFoods() {
   let foods = getAllFoods();
+  if (archivedFilter === 'active') {
+    foods = foods.filter(f => !f.isArchived);
+  } else if (archivedFilter === 'archived') {
+    foods = foods.filter(f => f.isArchived);
+  }
   if (currentCategory !== 'All') {
     foods = foods.filter(f => f.category === currentCategory);
   }
@@ -63,6 +75,13 @@ function buildPage(container) {
           ${categories.map(cat => `
             <option value="${cat}" ${cat === currentCategory ? 'selected' : ''}>${cat}</option>
           `).join('')}
+        </select>
+      </div>
+      <div class="ing-archive-filter">
+        <select id="archive-select" class="category-select-input" title="Filter by archive status">
+          <option value="active" ${archivedFilter === 'active' ? 'selected' : ''}>Active only</option>
+          <option value="archived" ${archivedFilter === 'archived' ? 'selected' : ''}>Archived only</option>
+          <option value="all" ${archivedFilter === 'all' ? 'selected' : ''}>All (active + archived)</option>
         </select>
       </div>
     </div>
@@ -103,7 +122,7 @@ function renderTable(foods) {
       </thead>
       <tbody>
         ${foods.map(food => `
-          <tr class="${food.isCustom ? 'row-custom' : food.source === 'claude' ? 'row-claude' : ''}">
+          <tr class="${food.isCustom ? 'row-custom' : food.source === 'claude' ? 'row-claude' : ''} ${food.isArchived ? 'row-archived' : ''}">
             <td>
               <span class="cat-badge cat-${slugify(food.category || 'other')}">${food.category || '—'}</span>
             </td>
@@ -111,6 +130,7 @@ function renderTable(foods) {
               ${escHtml(food.name)}
               ${food.isCustom ? '<span class="custom-tag">your add</span>' : ''}
               ${food.source === 'claude' ? '<span class="claude-tag">claude</span>' : ''}
+              ${food.isArchived ? '<span class="archived-tag">archived</span>' : ''}
             </td>
             <td class="num-col">${food.nutritionPer100g.kcal}</td>
             <td class="num-col">${food.nutritionPer100g.protein}</td>
@@ -118,11 +138,17 @@ function renderTable(foods) {
             <td class="num-col">${food.nutritionPer100g.fat}</td>
             <td class="unit-col">${food.availableUnits?.[0] || 'g'}</td>
             <td class="action-col">
-              <button class="btn btn-ghost btn-sm link-products-btn" data-id="${food.id}" title="Link supermarket products">
-                ${(() => { const n = countLinks(food.id); return n ? `Linked <span class="linked-badge">${n}</span>` : 'Link products'; })()}
-              </button>
-              <button class="edit-food-btn" data-id="${food.id}" title="Edit">✎</button>
-              <button class="del-food-btn" data-id="${food.id}" title="${food.isCustom ? 'Delete' : 'Remove from list'}">✕</button>
+              ${food.isArchived ? `
+                <button class="btn btn-ghost btn-sm restore-food-btn" data-id="${food.id}" title="Restore to active">↺ Restore</button>
+                <button class="del-food-btn" data-id="${food.id}" title="${food.isCustom ? 'Delete' : 'Remove from list'}">✕</button>
+              ` : `
+                <button class="btn btn-ghost btn-sm link-products-btn" data-id="${food.id}" title="Link supermarket products">
+                  ${(() => { const n = countLinks(food.id); return n ? `Linked <span class="linked-badge">${n}</span>` : 'Link products'; })()}
+                </button>
+                <button class="edit-food-btn" data-id="${food.id}" title="Edit">✎</button>
+                <button class="archive-food-btn" data-id="${food.id}" title="Archive (hides from active selectors, still listed here)">📦</button>
+                <button class="del-food-btn" data-id="${food.id}" title="${food.isCustom ? 'Delete' : 'Remove from list'}">✕</button>
+              `}
             </td>
           </tr>
         `).join('')}
@@ -223,6 +249,27 @@ function bindEvents(container) {
   container.querySelector('#category-select')?.addEventListener('change', (e) => {
     currentCategory = e.target.value;
     refreshTable(container);
+  });
+
+  // Archive filter
+  container.querySelector('#archive-select')?.addEventListener('change', (e) => {
+    archivedFilter = e.target.value;
+    refreshTable(container);
+  });
+
+  // Archive / Restore
+  container.addEventListener('click', (e) => {
+    const archBtn = e.target.closest('.archive-food-btn');
+    if (archBtn) {
+      archiveFood(archBtn.dataset.id);
+      refreshTable(container);
+      return;
+    }
+    const resBtn = e.target.closest('.restore-food-btn');
+    if (resBtn) {
+      unarchiveFood(resBtn.dataset.id);
+      refreshTable(container);
+    }
   });
 
   // Open modal

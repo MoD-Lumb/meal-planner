@@ -6,6 +6,7 @@ import {
   mealPortionsStore, setMealPortions, getMealPortions,
   customFoodsStore,
   mealOverridesStore, setMealOverride, tombstoneMeal,
+  archiveMeal, unarchiveMeal, isMealArchived, isFoodArchived,
 } from '../store.js';
 
 const CATEGORIES = ['all', 'breakfast', 'lunch', 'snack', 'dinner'];
@@ -13,6 +14,7 @@ const CATEGORIES = ['all', 'breakfast', 'lunch', 'snack', 'dinner'];
 let selectedMealId = null;
 let currentCategory = 'all';
 let currentSearch = '';
+let archivedFilter = 'active'; // 'active' | 'archived' | 'all'
 
 // In-memory state for the create/edit form
 let formIngredients = [];   // [{ id, foodId, name, quantity, unit }]
@@ -23,18 +25,25 @@ export function renderMealsDatabase(container) {
   selectedMealId = null;
   currentCategory = 'all';
   currentSearch = '';
+  archivedFilter = 'active';
   buildPage(container);
 }
 
 // ── Data helpers ──────────────────────────────────────────────────────────
 
 function getAllMeals() {
-  const { overrides, tombstones } = mealOverridesStore.get();
+  const { overrides, tombstones, archived } = mealOverridesStore.get();
   const tombSet = new Set(tombstones || []);
+  const archSet = new Set(archived || []);
   const builtIn = mealsDatabase
     .filter(m => !tombSet.has(m.id))
-    .map(m => overrides?.[m.id] ? { ...m, ...overrides[m.id] } : m);
-  const custom = customMealsStore.get().meals.filter(m => !tombSet.has(m.id));
+    .map(m => ({
+      ...(overrides?.[m.id] ? { ...m, ...overrides[m.id] } : m),
+      isArchived: archSet.has(m.id),
+    }));
+  const custom = customMealsStore.get().meals
+    .filter(m => !tombSet.has(m.id))
+    .map(m => ({ ...m, isArchived: archSet.has(m.id) }));
   return [...builtIn, ...custom];
 }
 
@@ -48,6 +57,11 @@ function isCustomMeal(id) {
 
 function filteredMeals() {
   let meals = getAllMeals();
+  if (archivedFilter === 'active') {
+    meals = meals.filter(m => !m.isArchived);
+  } else if (archivedFilter === 'archived') {
+    meals = meals.filter(m => m.isArchived);
+  }
   if (currentCategory !== 'all') {
     meals = meals.filter(m => m.category === currentCategory || m.category === 'any');
   }
@@ -93,6 +107,11 @@ function buildPage(container) {
           </button>
         `).join('')}
       </div>
+      <select id="mdb-archive-select" class="category-select-input" title="Filter by archive status">
+        <option value="active" ${archivedFilter === 'active' ? 'selected' : ''}>Active only</option>
+        <option value="archived" ${archivedFilter === 'archived' ? 'selected' : ''}>Archived only</option>
+        <option value="all" ${archivedFilter === 'all' ? 'selected' : ''}>All (active + archived)</option>
+      </select>
     </div>
 
     <div class="mdb-layout">
@@ -124,10 +143,10 @@ function renderMealCards(meals) {
     const total = mealNutrition(meal, portions);
     const custom = isCustomMeal(meal.id);
     return `
-      <div class="meal-card ${selectedMealId === meal.id ? 'selected' : ''} ${custom ? 'meal-card--custom' : ''}" data-meal-id="${meal.id}">
+      <div class="meal-card ${selectedMealId === meal.id ? 'selected' : ''} ${custom ? 'meal-card--custom' : ''} ${meal.isArchived ? 'meal-card--archived' : ''}" data-meal-id="${meal.id}">
         <div class="meal-card-emoji">${meal.imageEmoji || '🍴'}</div>
         <div class="meal-card-body">
-          <div class="meal-card-name">${escHtml(meal.name)} ${custom ? '<span class="custom-tag">custom</span>' : ''}</div>
+          <div class="meal-card-name">${escHtml(meal.name)} ${custom ? '<span class="custom-tag">custom</span>' : ''} ${meal.isArchived ? '<span class="archived-tag">archived</span>' : ''}</div>
           <div class="meal-card-cat">${catLabel(meal.category)}</div>
           <div class="meal-card-stats">
             <span class="stat-kcal">${total.kcal} kcal</span>
@@ -174,6 +193,9 @@ function renderMealDetail(mealId, container) {
         </div>
         <div class="detail-actions">
           <button class="btn btn-ghost btn-sm" id="edit-meal-btn">Edit</button>
+          ${meal.isArchived
+            ? `<button class="btn btn-ghost btn-sm" id="restore-meal-btn" title="Restore to active">↺ Restore</button>`
+            : `<button class="btn btn-ghost btn-sm" id="archive-meal-btn" title="Archive (hides from menu picker, still listed here)">📦 Archive</button>`}
           <button class="btn btn-ghost btn-sm detail-del-btn" id="delete-meal-btn">${custom ? 'Delete' : 'Remove'}</button>
         </div>
       </div>
@@ -287,6 +309,18 @@ function bindDetailEvents(mealId, container) {
     container.querySelector('#meal-detail-panel').innerHTML = renderEmptyDetail();
     refreshCards(container);
     refreshSubtitle(container);
+  });
+
+  container.querySelector('#archive-meal-btn')?.addEventListener('click', () => {
+    archiveMeal(mealId);
+    renderMealDetail(mealId, container);
+    refreshCards(container);
+  });
+
+  container.querySelector('#restore-meal-btn')?.addEventListener('click', () => {
+    unarchiveMeal(mealId);
+    renderMealDetail(mealId, container);
+    refreshCards(container);
   });
 }
 
@@ -543,10 +577,11 @@ function bindIngRowEvents(box, ingId) {
       if (!q) { dd.innerHTML = ''; return; }
 
       const allFoods = [...foodDatabase, ...customFoodsStore.get().foods];
-      const matches = searchFoods(q);
+      const matches = searchFoods(q).filter(f => !isFoodArchived(f.id));
       const customMatches = customFoodsStore.get().foods.filter(f => {
         const ql = q.toLowerCase();
-        return f.name.toLowerCase().includes(ql) || (f.aliases || []).some(a => a.toLowerCase().includes(ql));
+        return (f.name.toLowerCase().includes(ql) || (f.aliases || []).some(a => a.toLowerCase().includes(ql)))
+          && !isFoodArchived(f.id);
       }).filter(f => !matches.find(m => m.id === f.id)).slice(0, 3);
 
       const all = [...matches, ...customMatches].slice(0, 8);
@@ -705,6 +740,11 @@ function bindEvents(container) {
     container.querySelectorAll('.cat-tab').forEach(t =>
       t.classList.toggle('active', t.dataset.cat === currentCategory)
     );
+    refreshCards(container);
+  });
+
+  container.querySelector('#mdb-archive-select')?.addEventListener('change', (e) => {
+    archivedFilter = e.target.value;
     refreshCards(container);
   });
 
