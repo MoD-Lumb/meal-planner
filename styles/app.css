@@ -2144,7 +2144,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 
 .grocery-pick-option {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto 1fr auto auto auto;
   align-items: center;
   gap: var(--space-2);
   padding: 6px 8px;
@@ -2167,6 +2167,13 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
   color: var(--gray-800, #1f2937);
   min-width: 52px;
   text-align: right;
+}
+.grocery-pick-unit-price {
+  font-size: 11px;
+  color: var(--gray-600, #4b5563);
+  min-width: 72px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .grocery-pick-footer {

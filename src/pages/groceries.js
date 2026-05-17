@@ -300,14 +300,24 @@ async function loadPickPanel(container, panel, item, index) {
     const groupsHtml = perChain.map(({ code, label, products }) => {
       if (products.length === 0) return '';
       const pickedIds = new Set(getGroceryChoicesForChain(item.foodId, code).map(String));
+      const sortedProducts = [...products].sort((a, b) => {
+        const ua = computeUnitPrice(a), ub = computeUnitPrice(b);
+        if (ua && ub) return ua.value - ub.value;
+        if (ua) return -1;
+        if (ub) return 1;
+        const pa = typeof a.minPrice === 'number' ? a.minPrice : Infinity;
+        const pb = typeof b.minPrice === 'number' ? b.minPrice : Infinity;
+        return pa - pb;
+      });
       return `
         <div class="grocery-pick-chain">
           <div class="grocery-pick-chain-header">${escHtml(label)}</div>
           <ul class="grocery-pick-list">
-            ${products.map(p => {
+            ${sortedProducts.map(p => {
               const checked = pickedIds.has(String(p.id));
               const metaBits = [p.brand, (p.quantity && p.unit) ? `${p.quantity} ${p.unit}` : null].filter(Boolean).join(' · ');
               const priceTxt = typeof p.minPrice === 'number' ? `€${Number(p.minPrice).toFixed(2)}` : '—';
+              const unitPriceTxt = formatUnitPrice(p);
               return `
                 <li>
                   <label class="grocery-pick-option ${checked ? 'grocery-pick-option--checked' : ''}"
@@ -317,6 +327,7 @@ async function loadPickPanel(container, panel, item, index) {
                     <span class="grocery-pick-name">${escHtml(p.name)}</span>
                     ${metaBits ? `<span class="grocery-pick-meta nt-hint">${escHtml(metaBits)}</span>` : ''}
                     <span class="grocery-pick-price">${priceTxt}</span>
+                    <span class="grocery-pick-unit-price">${unitPriceTxt ? escHtml(unitPriceTxt) : ''}</span>
                   </label>
                 </li>
               `;
@@ -378,6 +389,41 @@ function refreshRow(container, items, index) {
   const row = container.querySelector(`.grocery-item[data-index="${index}"]`);
   if (!row) return;
   row.outerHTML = renderGroceryItem(item, index, getGroceryChecks());
+}
+
+// Parse a product's `quantity` string (e.g. "500 G", "1.5 L", "12 KOM") and
+// derive a normalized unit price for cross-product comparison. Returns
+// { value, label } or null when we can't compute one.
+function computeUnitPrice(p) {
+  const price = typeof p.minPrice === 'number' ? p.minPrice : null;
+  if (price == null) return null;
+  const raw = String(p.quantity || '').trim();
+  if (!raw) return null;
+  const m = raw.match(/^([0-9]+(?:[.,][0-9]+)?)\s*([A-Za-zŠšĐđČčĆćŽž]+)/);
+  if (!m) return null;
+  const qty = parseFloat(m[1].replace(',', '.'));
+  if (!isFinite(qty) || qty <= 0) return null;
+  const u = m[2].toUpperCase();
+
+  if (u === 'KG')      return { value: price / qty,         label: 'kg' };
+  if (u === 'G')       return { value: price * 1000 / qty,  label: 'kg' };
+  if (u === 'L')       return { value: price / qty,         label: 'L'  };
+  if (u === 'ML')      return { value: price * 1000 / qty,  label: 'L'  };
+  if (u === 'CL')      return { value: price * 100 / qty,   label: 'L'  };
+  if (u === 'DL')      return { value: price * 10 / qty,    label: 'L'  };
+  if (u === 'M')       return { value: price / qty,         label: 'm'  };
+  if (u === 'KOM' || u === 'PAK' || u === 'SET') {
+    if (qty === 1) return null;
+    return { value: price / qty, label: u === 'KOM' ? 'kom' : (u === 'PAK' ? 'pak' : 'set') };
+  }
+  return null;
+}
+
+function formatUnitPrice(p) {
+  const up = computeUnitPrice(p);
+  if (!up) return '';
+  const digits = up.value >= 1 ? 2 : 3;
+  return `€${up.value.toFixed(digits)}/${up.label}`;
 }
 
 function escHtml(str) {
