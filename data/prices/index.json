@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "date": "2026-05-19",
-  "generatedAt": "2026-05-19T07:40:55+00:00",
+  "generatedAt": "2026-05-20T04:25:15+00:00",
   "chains": [
     {
       "code": "boso",
@@ -425,6 +425,14 @@
       "file": "lidl.json"
     },
     {
+      "code": "lorenco",
+      "displayName": "Lorenco",
+      "productCount": 17383,
+      "storeCount": 1,
+      "cities": [],
+      "file": "lorenco.json"
+    },
+    {
       "code": "metro",
       "displayName": "Metro",
       "productCount": 13209,
@@ -717,6 +725,42 @@
         "Zlatar"
       ],
       "file": "spar.json"
+    },
+    {
+      "code": "stanic",
+      "displayName": "Stanic",
+      "productCount": 2577,
+      "storeCount": 32,
+      "cities": [
+        "Biograd",
+        "Bjelovar",
+        "Dubrovnik",
+        "Grabovac",
+        "Karlovac",
+        "Kaštel Gomilica",
+        "Koprivnica",
+        "Labin",
+        "Medulin",
+        "Opatija",
+        "Poreč",
+        "Požega",
+        "Pula",
+        "Rijeka",
+        "Rovinj",
+        "Sesvete",
+        "Slavonski Brod",
+        "Stari Grad",
+        "Trogir",
+        "Umag",
+        "Vinkovci",
+        "Vodice",
+        "Vodnjan",
+        "Zadar",
+        "Zagreb",
+        "Čakovec",
+        "Šibenik"
+      ],
+      "file": "stanic.json"
     },
     {
       "code": "stridon",
