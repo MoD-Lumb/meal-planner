@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "date": "2026-05-30",
-  "generatedAt": "2026-05-30T06:42:08+00:00",
+  "date": "2026-05-31",
+  "generatedAt": "2026-05-31T07:39:56+00:00",
   "chains": [
     {
       "code": "boso",
       "displayName": "Boso",
-      "productCount": 10125,
+      "productCount": 10123,
       "storeCount": 14,
       "cities": [
         "Borovo",
@@ -48,7 +48,7 @@
     {
       "code": "eurospin",
       "displayName": "Eurospin",
-      "productCount": 4016,
+      "productCount": 4014,
       "storeCount": 41,
       "cities": [
         "Biograd",
@@ -107,7 +107,7 @@
     {
       "code": "jadranka_trgovina",
       "displayName": "Jadranka Trgovina",
-      "productCount": 13307,
+      "productCount": 13306,
       "storeCount": 1,
       "cities": [
         "Mali Lošinj"
@@ -237,8 +237,8 @@
     {
       "code": "ktc",
       "displayName": "KTC",
-      "productCount": 15990,
-      "storeCount": 31,
+      "productCount": 16244,
+      "storeCount": 33,
       "cities": [
         "Bjelovar",
         "Cakovec",
@@ -254,6 +254,7 @@
         "Krizevci",
         "Kutina",
         "Mursko Sredisce",
+        "Pakrac",
         "Petrinja",
         "Pitomaca",
         "Pozega",
@@ -271,7 +272,7 @@
     {
       "code": "metro",
       "displayName": "Metro",
-      "productCount": 13218,
+      "productCount": 13239,
       "storeCount": 10,
       "cities": [
         "Cavle",
@@ -288,9 +289,28 @@
       "file": "metro.json"
     },
     {
+      "code": "ntl",
+      "displayName": "NTL",
+      "productCount": 9628,
+      "storeCount": 10,
+      "cities": [
+        "Bilje",
+        "Cepin",
+        "Duga Resa",
+        "Krapina",
+        "Ludbreg",
+        "Novi Marof",
+        "Osijek",
+        "Sesvete",
+        "Slatina",
+        "Varazdin"
+      ],
+      "file": "ntl.json"
+    },
+    {
       "code": "plodine",
       "displayName": "Plodine",
-      "productCount": 28478,
+      "productCount": 28479,
       "storeCount": 150,
       "cities": [
         "Beli Manastir",
@@ -420,7 +440,7 @@
     {
       "code": "ribola",
       "displayName": "Ribola",
-      "productCount": 16457,
+      "productCount": 16458,
       "storeCount": 61,
       "cities": [
         "Brela",
@@ -456,7 +476,7 @@
     {
       "code": "spar",
       "displayName": "Spar",
-      "productCount": 23821,
+      "productCount": 23822,
       "storeCount": 144,
       "cities": [
         "Bibinje",
@@ -595,7 +615,7 @@
     {
       "code": "studenac",
       "displayName": "Studenac",
-      "productCount": 20215,
+      "productCount": 20218,
       "storeCount": 20,
       "cities": [
         "Buzet",
@@ -623,7 +643,7 @@
     {
       "code": "tommy",
       "displayName": "Tommy",
-      "productCount": 19640,
+      "productCount": 19639,
       "storeCount": 86,
       "cities": [
         "Baška",
