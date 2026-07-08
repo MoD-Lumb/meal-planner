@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "date": "2026-07-07",
-  "generatedAt": "2026-07-07T07:32:47+00:00",
+  "generatedAt": "2026-07-08T06:23:29+00:00",
   "chains": [
     {
       "code": "boso",
@@ -24,6 +24,16 @@
       "file": "boso.json"
     },
     {
+      "code": "branka",
+      "displayName": "Branka",
+      "productCount": 13736,
+      "storeCount": 2,
+      "cities": [
+        "Varaždin"
+      ],
+      "file": "branka.json"
+    },
+    {
       "code": "bure",
       "displayName": "Bure",
       "productCount": 13952,
@@ -44,6 +54,14 @@
         "Vodice"
       ],
       "file": "djelo_vodice.json"
+    },
+    {
+      "code": "dm",
+      "displayName": "dm",
+      "productCount": 22911,
+      "storeCount": 1,
+      "cities": [],
+      "file": "dm.json"
     },
     {
       "code": "dukat",
@@ -293,6 +311,41 @@
       "file": "konzum.json"
     },
     {
+      "code": "ktc",
+      "displayName": "KTC",
+      "productCount": 16418,
+      "storeCount": 34,
+      "cities": [
+        "Bjelovar",
+        "Daruvar",
+        "Dugo Selo",
+        "Grubišno Polje",
+        "Ivanec",
+        "Karlovac",
+        "Koprivnica",
+        "Krapina",
+        "Križevci",
+        "Kutina",
+        "Mursko Središće",
+        "Pakrac",
+        "Petrinja",
+        "Pitomača",
+        "Požega",
+        "Prelog",
+        "Sisak",
+        "Slatina",
+        "Varaždin",
+        "Velika Gorica",
+        "Virovitica",
+        "Vrbovec",
+        "Zabok",
+        "Čakovec",
+        "Čazma",
+        "Đurđevac"
+      ],
+      "file": "ktc.json"
+    },
+    {
       "code": "lidl",
       "displayName": "Lidl",
       "productCount": 6919,
@@ -384,6 +437,14 @@
       "file": "lidl.json"
     },
     {
+      "code": "lorenco",
+      "displayName": "Lorenco",
+      "productCount": 17427,
+      "storeCount": 1,
+      "cities": [],
+      "file": "lorenco.json"
+    },
+    {
       "code": "metro",
       "displayName": "Metro",
       "productCount": 13406,
@@ -401,6 +462,25 @@
         "Čavle"
       ],
       "file": "metro.json"
+    },
+    {
+      "code": "ntl",
+      "displayName": "NTL",
+      "productCount": 9800,
+      "storeCount": 10,
+      "cities": [
+        "Bilje",
+        "Duga Resa",
+        "Krapina",
+        "Ludbreg",
+        "Novi Marof",
+        "Osijek",
+        "Sesvete",
+        "Slatina",
+        "Varaždin",
+        "Čepin"
+      ],
+      "file": "ntl.json"
     },
     {
       "code": "plodine",
@@ -724,6 +804,34 @@
         "Čakovec"
       ],
       "file": "stridon.json"
+    },
+    {
+      "code": "studenac",
+      "displayName": "Studenac",
+      "productCount": 20263,
+      "storeCount": 20,
+      "cities": [
+        "Buzet",
+        "Cista Provo",
+        "Dubrovnik",
+        "Funtana",
+        "Grohote",
+        "Imotski",
+        "Jelsa",
+        "Komiža",
+        "Kutina",
+        "Močići",
+        "Omiš",
+        "Petrinja",
+        "Ploče",
+        "Popovača",
+        "Pregrada",
+        "Sisak",
+        "Slunj",
+        "Sveti Križ Začretje",
+        "Zaton"
+      ],
+      "file": "studenac.json"
     },
     {
       "code": "tommy",
