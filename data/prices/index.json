@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "date": "2026-07-13",
-  "generatedAt": "2026-07-13T06:47:49+00:00",
+  "generatedAt": "2026-07-14T06:05:38+00:00",
   "chains": [
     {
       "code": "boso",
@@ -24,6 +24,16 @@
       "file": "boso.json"
     },
     {
+      "code": "branka",
+      "displayName": "Branka",
+      "productCount": 13753,
+      "storeCount": 2,
+      "cities": [
+        "Varaždin"
+      ],
+      "file": "branka.json"
+    },
+    {
       "code": "bure",
       "displayName": "Bure",
       "productCount": 14027,
@@ -44,6 +54,14 @@
         "Vodice"
       ],
       "file": "djelo_vodice.json"
+    },
+    {
+      "code": "dm",
+      "displayName": "dm",
+      "productCount": 22774,
+      "storeCount": 1,
+      "cities": [],
+      "file": "dm.json"
     },
     {
       "code": "dukat",
@@ -174,74 +192,72 @@
     {
       "code": "konzum",
       "displayName": "Konzum",
-      "productCount": 21244,
-      "storeCount": 96,
+      "productCount": 20681,
+      "storeCount": 95,
       "cities": [
+        "Banjole",
+        "Beli Manastir",
         "Belišće",
+        "Bilje",
+        "Biograd na Moru",
+        "Bjelovar",
         "Brckovljani",
         "Crikvenica",
         "Delnice",
+        "Donji Kneginec",
         "Donji Miholjac",
-        "Drniš",
         "Dubrovnik",
-        "Duga Resa",
         "Garešnica",
-        "Gospić",
         "Hum na Sutli",
-        "Hvar",
         "Ilok",
+        "Ivanec",
         "Ivanić-Grad",
-        "Karlovac",
         "Kaštel Sućurac",
-        "Knin",
-        "Koprivnica",
         "Korenica",
-        "Kotoriba",
+        "Korčula",
         "Krapina",
-        "Kukuljanovo",
         "Kupari",
         "Lepoglava",
+        "Lopar",
         "Lovran",
-        "Ludbreg",
-        "Matulji",
+        "Makarska",
         "Metković",
-        "Mlini",
-        "Murter",
+        "Mursko Središće",
         "Našice",
+        "Nova Gradiška",
+        "Novi Vinodolski",
         "Novska",
         "Ogulin",
-        "Opatija",
         "Osijek",
-        "Otočac",
         "Ozalj",
-        "Pitomača",
-        "Poreč",
-        "Primošten",
         "Pula",
         "Rab",
+        "Rijeka",
         "Rovinj",
-        "Samobor",
+        "Rubeši",
         "Sesvete",
-        "Sesvetski Kraljevec",
         "Sinj",
+        "Sisak",
+        "Slavonski Brod",
         "Split",
         "Supetar",
         "Sveti Ivan Zelina",
-        "Trnovec Bartolovečki",
         "Trogir",
+        "Umag",
         "Varaždin",
         "Velika Gorica",
-        "Veliko Trgovišće",
         "Vinkovci",
-        "Virovitica",
+        "Vodice",
+        "Vrbovec",
         "Vrsar",
         "Vukovar",
         "Zabok",
         "Zadar",
         "Zagreb",
+        "Zaprešić",
+        "Zlatar Bistrica",
         "Čakovec",
-        "Đakovo",
-        "Đurđevac",
+        "Čepin",
         "Šibenik",
         "Županja"
       ],
@@ -374,6 +390,14 @@
       "file": "lidl.json"
     },
     {
+      "code": "lorenco",
+      "displayName": "Lorenco",
+      "productCount": 17428,
+      "storeCount": 1,
+      "cities": [],
+      "file": "lorenco.json"
+    },
+    {
       "code": "metro",
       "displayName": "Metro",
       "productCount": 13413,
@@ -391,6 +415,25 @@
         "Čavle"
       ],
       "file": "metro.json"
+    },
+    {
+      "code": "ntl",
+      "displayName": "NTL",
+      "productCount": 9831,
+      "storeCount": 10,
+      "cities": [
+        "Bilje",
+        "Duga Resa",
+        "Krapina",
+        "Ludbreg",
+        "Novi Marof",
+        "Osijek",
+        "Sesvete",
+        "Slatina",
+        "Varaždin",
+        "Čepin"
+      ],
+      "file": "ntl.json"
     },
     {
       "code": "plodine",
@@ -849,16 +892,6 @@
         "Virovitica"
       ],
       "file": "trgovina-krk.json"
-    },
-    {
-      "code": "vrutak",
-      "displayName": "Vrutak",
-      "productCount": 13977,
-      "storeCount": 4,
-      "cities": [
-        "Zagreb"
-      ],
-      "file": "vrutak.json"
     },
     {
       "code": "zabac",
