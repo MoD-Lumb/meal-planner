@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "date": "2026-07-21",
-  "generatedAt": "2026-07-22T06:23:14+00:00",
+  "date": "2026-07-23",
+  "generatedAt": "2026-07-23T06:25:14+00:00",
   "chains": [
     {
       "code": "boso",
       "displayName": "Boso",
-      "productCount": 10013,
+      "productCount": 9953,
       "storeCount": 14,
       "cities": [
         "Borovo",
@@ -26,7 +26,7 @@
     {
       "code": "branka",
       "displayName": "Branka",
-      "productCount": 13778,
+      "productCount": 13785,
       "storeCount": 2,
       "cities": [
         "Varaždin"
@@ -36,7 +36,7 @@
     {
       "code": "bure",
       "displayName": "Bure",
-      "productCount": 14078,
+      "productCount": 14100,
       "storeCount": 3,
       "cities": [
         "Biograd na Moru",
@@ -48,20 +48,12 @@
     {
       "code": "djelo_vodice",
       "displayName": "Djelo Vodice",
-      "productCount": 10845,
+      "productCount": 10850,
       "storeCount": 1,
       "cities": [
         "Vodice"
       ],
       "file": "djelo_vodice.json"
-    },
-    {
-      "code": "dm",
-      "displayName": "dm",
-      "productCount": 22654,
-      "storeCount": 1,
-      "cities": [],
-      "file": "dm.json"
     },
     {
       "code": "dukat",
@@ -79,7 +71,7 @@
     {
       "code": "eurospin",
       "displayName": "Eurospin",
-      "productCount": 3913,
+      "productCount": 3921,
       "storeCount": 42,
       "cities": [
         "Biograd na Moru",
@@ -125,7 +117,7 @@
     {
       "code": "gavranovic",
       "displayName": "Gavranovic",
-      "productCount": 7914,
+      "productCount": 7918,
       "storeCount": 9,
       "cities": [
         "Glina",
@@ -138,7 +130,7 @@
     {
       "code": "jadranka_trgovina",
       "displayName": "Jadranka Trgovina",
-      "productCount": 13501,
+      "productCount": 13524,
       "storeCount": 1,
       "cities": [
         "Mali Lošinj"
@@ -146,124 +138,94 @@
       "file": "jadranka_trgovina.json"
     },
     {
-      "code": "kaufland",
-      "displayName": "Kaufland",
-      "productCount": 18837,
-      "storeCount": 53,
-      "cities": [
-        "Biograd na Moru",
-        "Bjelovar",
-        "Dugo Selo",
-        "Ivanec",
-        "Karlovac",
-        "Koprivnica",
-        "Kutina",
-        "Makarska",
-        "Nova Gradiška",
-        "Osijek",
-        "Poreč",
-        "Požega",
-        "Pula",
-        "Rijeka",
-        "Rovinj",
-        "Samobor",
-        "Sinj",
-        "Sisak",
-        "Slavonski Brod",
-        "Split",
-        "Trogir",
-        "Umag",
-        "Varaždin",
-        "Velika Gorica",
-        "Vinkovci",
-        "Virovitica",
-        "Vodice",
-        "Vukovar",
-        "Zabok",
-        "Zadar",
-        "Zagreb",
-        "Zaprešić",
-        "Čakovec",
-        "Čibača",
-        "Đakovo",
-        "Šibenik"
-      ],
-      "file": "kaufland.json"
-    },
-    {
       "code": "konzum",
       "displayName": "Konzum",
-      "productCount": 21308,
-      "storeCount": 92,
+      "productCount": 20819,
+      "storeCount": 105,
       "cities": [
         "Beli Manastir",
-        "Bilje",
+        "Belišće",
+        "Biograd na Moru",
+        "Bjelovar",
         "Crikvenica",
+        "Daruvar",
+        "Delnice",
+        "Donji Miholjac",
         "Drniš",
-        "Dubrovnik",
+        "Duga Resa",
         "Gospić",
         "Hum na Sutli",
-        "Ivanić-Grad",
-        "Jastrebarsko",
+        "Ilok",
+        "Imotski",
         "Karlovac",
-        "Knin",
+        "Kaštel Sućurac",
+        "Korenica",
+        "Krapina",
         "Križevci",
+        "Krk",
+        "Kukuljanovo",
+        "Kupari",
         "Labin",
+        "Lepoglava",
+        "Lopar",
+        "Lovran",
+        "Ludbreg",
         "Makarska",
-        "Mali Lošinj",
+        "Matulji",
         "Metković",
-        "Mlini",
         "Mursko Središće",
         "Murter",
+        "Našice",
         "Novalja",
-        "Novi Vinodolski",
-        "Novska",
+        "Novi Marof",
+        "Novigrad",
         "Ogulin",
         "Opatija",
         "Orebić",
-        "Oriovac",
         "Osijek",
         "Otok",
-        "Ozalj",
+        "Otočac",
         "Pazin",
         "Pitomača",
+        "Poreč",
         "Prelog",
+        "Primošten",
         "Pula",
-        "Rab",
-        "Rijeka",
         "Rovinj",
-        "Rubeši",
+        "Samobor",
         "Sesvete",
         "Sinj",
+        "Sisak",
+        "Slavonski Brod",
         "Solin",
         "Split",
-        "Trnovec Bartolovečki",
-        "Trogir",
+        "Sveti Ivan Zelina",
+        "Umag",
         "Valpovo",
         "Varaždin",
         "Velika Gorica",
         "Veliko Trgovišće",
         "Vinkovci",
         "Virovitica",
+        "Vodice",
         "Vodnjan",
+        "Vrbovec",
         "Vrsar",
         "Vukovar",
-        "Zabok",
         "Zadar",
         "Zagreb",
         "Zaprešić",
-        "Zlatar Bistrica",
         "Čakovec",
-        "Đakovo",
-        "Šibenik",
-        "Županja"
+        "Čepin",
+        "Đurđevac",
+        "Šibenik"
       ],
       "file": "konzum.json"
     },
     {
       "code": "ktc",
       "displayName": "KTC",
-      "productCount": 16453,
+      "productCount": 16493,
       "storeCount": 34,
       "cities": [
         "Bjelovar",
@@ -298,7 +260,7 @@
     {
       "code": "lidl",
       "displayName": "Lidl",
-      "productCount": 6940,
+      "productCount": 6915,
       "storeCount": 116,
       "cities": [
         "Beli Manastir",
@@ -387,17 +349,9 @@
       "file": "lidl.json"
     },
     {
-      "code": "lorenco",
-      "displayName": "Lorenco",
-      "productCount": 17431,
-      "storeCount": 1,
-      "cities": [],
-      "file": "lorenco.json"
-    },
-    {
       "code": "metro",
       "displayName": "Metro",
-      "productCount": 13424,
+      "productCount": 13432,
       "storeCount": 10,
       "cities": [
         "Dubrovnik",
@@ -414,28 +368,9 @@
       "file": "metro.json"
     },
     {
-      "code": "ntl",
-      "displayName": "NTL",
-      "productCount": 9865,
-      "storeCount": 10,
-      "cities": [
-        "Bilje",
-        "Duga Resa",
-        "Krapina",
-        "Ludbreg",
-        "Novi Marof",
-        "Osijek",
-        "Sesvete",
-        "Slatina",
-        "Varaždin",
-        "Čepin"
-      ],
-      "file": "ntl.json"
-    },
-    {
       "code": "plodine",
       "displayName": "Plodine",
-      "productCount": 28917,
+      "productCount": 28967,
       "storeCount": 153,
       "cities": [
         "Beli Manastir",
@@ -566,7 +501,7 @@
     {
       "code": "ribola",
       "displayName": "Ribola",
-      "productCount": 16843,
+      "productCount": 16849,
       "storeCount": 61,
       "cities": [
         "Brela",
@@ -600,27 +535,9 @@
       "file": "ribola.json"
     },
     {
-      "code": "roto",
-      "displayName": "Roto",
-      "productCount": 8978,
-      "storeCount": 9,
-      "cities": [
-        "Komolac",
-        "Osijek",
-        "Poreč",
-        "Pula",
-        "Split",
-        "Varaždin",
-        "Zadar",
-        "Zagreb",
-        "Šibenik"
-      ],
-      "file": "roto.json"
-    },
-    {
       "code": "spar",
       "displayName": "Spar",
-      "productCount": 23590,
+      "productCount": 23594,
       "storeCount": 144,
       "cities": [
         "Bibinje",
@@ -692,7 +609,7 @@
     {
       "code": "stridon",
       "displayName": "Stridon",
-      "productCount": 16857,
+      "productCount": 16860,
       "storeCount": 22,
       "cities": [
         "Daruvar",
@@ -722,7 +639,7 @@
     {
       "code": "studenac",
       "displayName": "Studenac",
-      "productCount": 19845,
+      "productCount": 19877,
       "storeCount": 20,
       "cities": [
         "Buzet",
@@ -750,7 +667,7 @@
     {
       "code": "tommy",
       "displayName": "Tommy",
-      "productCount": 19890,
+      "productCount": 19899,
       "storeCount": 87,
       "cities": [
         "Baška",
@@ -821,7 +738,7 @@
     {
       "code": "trgocentar",
       "displayName": "Trgocentar",
-      "productCount": 10026,
+      "productCount": 10029,
       "storeCount": 6,
       "cities": [
         "Hum na Sutli",
@@ -836,7 +753,7 @@
     {
       "code": "trgovina-krk",
       "displayName": "Trgovina Krk",
-      "productCount": 18785,
+      "productCount": 18814,
       "storeCount": 14,
       "cities": [
         "Cestica",
@@ -857,7 +774,7 @@
     {
       "code": "vrutak",
       "displayName": "Vrutak",
-      "productCount": 13994,
+      "productCount": 13999,
       "storeCount": 4,
       "cities": [
         "Zagreb"
@@ -867,7 +784,7 @@
     {
       "code": "zabac",
       "displayName": "Zabac",
-      "productCount": 4687,
+      "productCount": 4628,
       "storeCount": 2,
       "cities": [
         "Velika Gorica",
