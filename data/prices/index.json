@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "date": "2026-08-30",
-  "generatedAt": "2026-08-30T09:38:32+00:00",
+  "date": "2026-08-31",
+  "generatedAt": "2026-08-31T10:20:30+00:00",
   "chains": [
     {
       "code": "boso",
       "displayName": "Boso",
-      "productCount": 6808,
+      "productCount": 6807,
       "storeCount": 3,
       "cities": [
         "Ivankovo",
@@ -16,9 +16,19 @@
       "file": "boso.json"
     },
     {
+      "code": "branka",
+      "displayName": "Branka",
+      "productCount": 14019,
+      "storeCount": 2,
+      "cities": [
+        "Varaždin"
+      ],
+      "file": "branka.json"
+    },
+    {
       "code": "bure",
       "displayName": "Bure",
-      "productCount": 14331,
+      "productCount": 14333,
       "storeCount": 3,
       "cities": [
         "Biograd na Moru",
@@ -36,6 +46,27 @@
         "Vodice"
       ],
       "file": "djelo_vodice.json"
+    },
+    {
+      "code": "dm",
+      "displayName": "dm",
+      "productCount": 22795,
+      "storeCount": 1,
+      "cities": [],
+      "file": "dm.json"
+    },
+    {
+      "code": "dukat",
+      "displayName": "Dukat",
+      "productCount": 401,
+      "storeCount": 6,
+      "cities": [
+        "Bjelovar",
+        "Osijek",
+        "Slavonski Brod",
+        "Zagreb"
+      ],
+      "file": "dukat.json"
     },
     {
       "code": "eurospin",
@@ -99,7 +130,7 @@
     {
       "code": "jadranka_trgovina",
       "displayName": "Jadranka Trgovina",
-      "productCount": 13469,
+      "productCount": 13441,
       "storeCount": 1,
       "cities": [
         "Mali Lošinj"
@@ -107,54 +138,9 @@
       "file": "jadranka_trgovina.json"
     },
     {
-      "code": "kaufland",
-      "displayName": "Kaufland",
-      "productCount": 19096,
-      "storeCount": 53,
-      "cities": [
-        "Biograd na Moru",
-        "Bjelovar",
-        "Dugo Selo",
-        "Ivanec",
-        "Karlovac",
-        "Koprivnica",
-        "Kutina",
-        "Makarska",
-        "Nova Gradiška",
-        "Osijek",
-        "Poreč",
-        "Požega",
-        "Pula",
-        "Rijeka",
-        "Rovinj",
-        "Samobor",
-        "Sinj",
-        "Sisak",
-        "Slavonski Brod",
-        "Split",
-        "Trogir",
-        "Umag",
-        "Varaždin",
-        "Velika Gorica",
-        "Vinkovci",
-        "Virovitica",
-        "Vodice",
-        "Vukovar",
-        "Zabok",
-        "Zadar",
-        "Zagreb",
-        "Zaprešić",
-        "Čakovec",
-        "Čibača",
-        "Đakovo",
-        "Šibenik"
-      ],
-      "file": "kaufland.json"
-    },
-    {
       "code": "ktc",
       "displayName": "KTC",
-      "productCount": 16460,
+      "productCount": 16453,
       "storeCount": 34,
       "cities": [
         "Bjelovar",
@@ -190,55 +176,97 @@
       "code": "lidl",
       "displayName": "Lidl",
       "productCount": 7125,
-      "storeCount": 50,
+      "storeCount": 116,
       "cities": [
+        "Beli Manastir",
+        "Benkovac",
         "Biograd na Moru",
+        "Bjelovar",
         "Buzet",
         "Crikvenica",
+        "Daruvar",
         "Delnice",
+        "Donji Miholjac",
         "Dubrovnik",
+        "Dugo Selo",
         "Dugopolje",
         "Gospić",
         "Imotski",
+        "Ivanec",
+        "Ivanić-Grad",
         "Jastrebarsko",
+        "Karlovac",
         "Kaštela",
+        "Knin",
+        "Koprivnica",
+        "Krapina",
+        "Križevci",
         "Krk",
+        "Kukuljanovo",
+        "Kutina",
         "Labin",
+        "Ludbreg",
         "Makarska",
         "Mali Lošinj",
         "Matulji",
         "Medulin",
         "Metković",
+        "Našice",
+        "Nova Gradiška",
+        "Novi Marof",
         "Novi Vinodolski",
+        "Novska",
         "Ogulin",
         "Omišalj",
         "Osijek",
         "Otočac",
         "Pazin",
+        "Petrinja",
         "Ploče",
         "Poreč",
+        "Požega",
+        "Prelog",
         "Pula",
+        "Rijeka",
         "Rovinj",
         "Samobor",
         "Senj",
+        "Sesvete",
+        "Sinj",
+        "Sisak",
+        "Slatina",
+        "Slavonski Brod",
         "Solin",
         "Split",
         "Supetar",
+        "Sveta Nedelja",
         "Trogir",
         "Umag-Umago",
+        "Valpovo",
+        "Varaždin",
         "Velika Gorica",
+        "Vinkovci",
+        "Virovitica",
+        "Viškovo",
         "Vodice",
+        "Vrbovec",
+        "Vukovar",
         "Zabok",
         "Zadar",
         "Zagreb",
-        "Šibenik"
+        "Zaprešić",
+        "Čakovec",
+        "Đakovo",
+        "Đurđevac",
+        "Šibenik",
+        "Županja"
       ],
       "file": "lidl.json"
     },
     {
       "code": "metro",
       "displayName": "Metro",
-      "productCount": 13504,
+      "productCount": 13503,
       "storeCount": 10,
       "cities": [
         "Dubrovnik",
@@ -276,7 +304,7 @@
     {
       "code": "plodine",
       "displayName": "Plodine",
-      "productCount": 29044,
+      "productCount": 29055,
       "storeCount": 154,
       "cities": [
         "Beli Manastir",
@@ -444,7 +472,7 @@
     {
       "code": "spar",
       "displayName": "Spar",
-      "productCount": 23233,
+      "productCount": 23234,
       "storeCount": 144,
       "cities": [
         "Bibinje",
@@ -546,7 +574,7 @@
     {
       "code": "studenac",
       "displayName": "Studenac",
-      "productCount": 20177,
+      "productCount": 20179,
       "storeCount": 20,
       "cities": [
         "Buzet",
@@ -574,7 +602,7 @@
     {
       "code": "tommy",
       "displayName": "Tommy",
-      "productCount": 19877,
+      "productCount": 19862,
       "storeCount": 87,
       "cities": [
         "Baška",
@@ -677,6 +705,27 @@
         "Virovitica"
       ],
       "file": "trgovina-krk.json"
+    },
+    {
+      "code": "vrutak",
+      "displayName": "Vrutak",
+      "productCount": 14039,
+      "storeCount": 4,
+      "cities": [
+        "Zagreb"
+      ],
+      "file": "vrutak.json"
+    },
+    {
+      "code": "zabac",
+      "displayName": "Zabac",
+      "productCount": 4826,
+      "storeCount": 2,
+      "cities": [
+        "Velika Gorica",
+        "Zagreb"
+      ],
+      "file": "zabac.json"
     }
   ]
 }
