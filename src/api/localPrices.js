@@ -154,9 +154,26 @@ export async function findByEan(chainCode, ean) {
   return null;
 }
 
+// A query made only of 8–14 digits is treated as a pasted barcode
+// (EAN-8, UPC-A, EAN-13, GTIN-14). Anything with letters, spaces or fewer
+// digits ("Piletina 500 g", "500") goes through the normal name search.
+const BARCODE_RE = /^\d{8,14}$/;
+
+// Catalogs sometimes drop leading zeros (a UPC 012345678905 is stored as
+// 12345678905), so compare barcodes by their digits without leading zeros.
+function canonicalEan(s) {
+  return String(s ?? '').trim().replace(/^0+/, '');
+}
+
 // Return top-N matches for UI "pick a different product" flows.
+// Barcode queries return only exact EAN matches (or nothing) — never partial.
 export async function searchTop(chainCode, query, limit = 5) {
   const chain = await loadChain(chainCode);
+  const trimmed = (query || '').trim();
+  if (BARCODE_RE.test(trimmed)) {
+    const target = canonicalEan(trimmed);
+    return chain.products.filter(p => canonicalEan(p.ean) === target).slice(0, limit);
+  }
   const tokens = normalize(query).split(' ').filter(Boolean);
   if (tokens.length === 0) return [];
   const scored = [];
