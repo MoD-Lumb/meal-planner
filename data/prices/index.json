@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "date": "2026-10-26",
-  "generatedAt": "2026-10-26T09:33:48+00:00",
+  "date": "2026-10-27",
+  "generatedAt": "2026-10-27T09:31:10+00:00",
   "chains": [
     {
       "code": "boso",
       "displayName": "Boso",
-      "productCount": 9261,
+      "productCount": 9264,
       "storeCount": 14,
       "cities": [
         "Borovo",
@@ -24,19 +24,9 @@
       "file": "boso.json"
     },
     {
-      "code": "branka",
-      "displayName": "Branka",
-      "productCount": 14544,
-      "storeCount": 2,
-      "cities": [
-        "Varaždin"
-      ],
-      "file": "branka.json"
-    },
-    {
       "code": "bure",
       "displayName": "Bure",
-      "productCount": 14522,
+      "productCount": 14527,
       "storeCount": 3,
       "cities": [
         "Biograd na Moru",
@@ -48,7 +38,7 @@
     {
       "code": "djelo_vodice",
       "displayName": "Djelo Vodice",
-      "productCount": 10721,
+      "productCount": 10724,
       "storeCount": 1,
       "cities": [
         "Vodice"
@@ -58,7 +48,7 @@
     {
       "code": "dm",
       "displayName": "dm",
-      "productCount": 21978,
+      "productCount": 22010,
       "storeCount": 1,
       "cities": [],
       "file": "dm.json"
@@ -79,7 +69,7 @@
     {
       "code": "eurospin",
       "displayName": "Eurospin",
-      "productCount": 3979,
+      "productCount": 4011,
       "storeCount": 44,
       "cities": [
         "Biograd na Moru",
@@ -126,8 +116,8 @@
     {
       "code": "gavranovic",
       "displayName": "Gavranovic",
-      "productCount": 15019,
-      "storeCount": 134,
+      "productCount": 15147,
+      "storeCount": 143,
       "cities": [
         "Bakar",
         "Bosiljevo",
@@ -159,9 +149,11 @@
         "Korenica",
         "Kraljevec na Sutli",
         "Kraljevica",
+        "Krapinske Toplice",
         "Krnjak",
         "Kupljenovo",
         "Lokve",
+        "Luka",
         "Lukovdol",
         "Mahicno",
         "Moravice",
@@ -179,6 +171,7 @@
         "Ravna Gora",
         "Saborsko",
         "Senj",
+        "Senkovec",
         "Sesvete - Kraljevec",
         "Severin na Kupi",
         "Sirac",
@@ -200,7 +193,7 @@
     {
       "code": "jadranka_trgovina",
       "displayName": "Jadranka Trgovina",
-      "productCount": 12206,
+      "productCount": 12227,
       "storeCount": 1,
       "cities": [
         "Mali Lošinj"
@@ -210,7 +203,7 @@
     {
       "code": "kaufland",
       "displayName": "Kaufland",
-      "productCount": 19366,
+      "productCount": 19373,
       "storeCount": 53,
       "cities": [
         "Biograd na Moru",
@@ -255,7 +248,7 @@
     {
       "code": "konzum",
       "displayName": "Konzum",
-      "productCount": 22229,
+      "productCount": 22173,
       "storeCount": 188,
       "cities": [
         "Banjole",
@@ -375,7 +368,7 @@
     {
       "code": "ktc",
       "displayName": "KTC",
-      "productCount": 15674,
+      "productCount": 15663,
       "storeCount": 34,
       "cities": [
         "Bjelovar",
@@ -410,7 +403,7 @@
     {
       "code": "lidl",
       "displayName": "Lidl",
-      "productCount": 6931,
+      "productCount": 6956,
       "storeCount": 116,
       "cities": [
         "Beli Manastir",
@@ -501,7 +494,7 @@
     {
       "code": "metro",
       "displayName": "Metro",
-      "productCount": 13493,
+      "productCount": 13494,
       "storeCount": 10,
       "cities": [
         "Dubrovnik",
@@ -520,7 +513,7 @@
     {
       "code": "ntl",
       "displayName": "NTL",
-      "productCount": 18244,
+      "productCount": 18253,
       "storeCount": 343,
       "cities": [
         "Aljmas",
@@ -663,7 +656,7 @@
     {
       "code": "plodine",
       "displayName": "Plodine",
-      "productCount": 76901,
+      "productCount": 76909,
       "storeCount": 154,
       "cities": [
         "Beli Manastir",
@@ -795,7 +788,7 @@
     {
       "code": "ribola",
       "displayName": "Ribola",
-      "productCount": 16970,
+      "productCount": 16965,
       "storeCount": 61,
       "cities": [
         "Brela",
@@ -829,27 +822,9 @@
       "file": "ribola.json"
     },
     {
-      "code": "roto",
-      "displayName": "Roto",
-      "productCount": 9003,
-      "storeCount": 9,
-      "cities": [
-        "Komolac",
-        "Osijek",
-        "Poreč",
-        "Pula",
-        "Split",
-        "Varaždin",
-        "Zadar",
-        "Zagreb",
-        "Šibenik"
-      ],
-      "file": "roto.json"
-    },
-    {
       "code": "spar",
       "displayName": "Spar",
-      "productCount": 23456,
+      "productCount": 23476,
       "storeCount": 144,
       "cities": [
         "Bibinje",
@@ -921,7 +896,7 @@
     {
       "code": "stanic",
       "displayName": "Stanic",
-      "productCount": 2595,
+      "productCount": 2600,
       "storeCount": 31,
       "cities": [
         "Biograd na Moru",
@@ -957,7 +932,7 @@
     {
       "code": "stridon",
       "displayName": "Stridon",
-      "productCount": 31630,
+      "productCount": 31635,
       "storeCount": 41,
       "cities": [
         "Daruvar",
@@ -999,7 +974,7 @@
     {
       "code": "studenac",
       "displayName": "Studenac",
-      "productCount": 19906,
+      "productCount": 19910,
       "storeCount": 20,
       "cities": [
         "Buzet",
@@ -1027,7 +1002,7 @@
     {
       "code": "tommy",
       "displayName": "Tommy",
-      "productCount": 19867,
+      "productCount": 19885,
       "storeCount": 87,
       "cities": [
         "Baška",
@@ -1098,7 +1073,7 @@
     {
       "code": "trgocentar",
       "displayName": "Trgocentar",
-      "productCount": 10306,
+      "productCount": 10308,
       "storeCount": 6,
       "cities": [
         "Hum na Sutli",
@@ -1113,7 +1088,7 @@
     {
       "code": "trgovina-krk",
       "displayName": "Trgovina Krk",
-      "productCount": 33823,
+      "productCount": 33835,
       "storeCount": 14,
       "cities": [
         "Cestica",
@@ -1134,7 +1109,7 @@
     {
       "code": "vrutak",
       "displayName": "Vrutak",
-      "productCount": 14306,
+      "productCount": 14308,
       "storeCount": 4,
       "cities": [
         "Zagreb"
